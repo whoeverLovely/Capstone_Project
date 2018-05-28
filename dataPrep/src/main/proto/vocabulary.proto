@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package proto;
+
+option java_package = "com.louise.udacity.lib";
+option java_outer_classname = "VocabularyProtos";
+
+message Vocabulary {
+  required string word = 1;
+  required string phonetic = 2;
+  required string definition = 3;
+  required string translation = 4;
+
+}
+
+message Vocabularies {
+  repeated Vocabulary vocabulary = 1;
+}

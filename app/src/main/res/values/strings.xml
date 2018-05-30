@@ -3,4 +3,14 @@
     <string name="main_button_text_archive">Archive</string>
     <string name="main_button_text_next">Next</string>
     <string name="dialog_download_complete">Download completed!</string>
+    <string name="tag_gre">gre</string>
+    <string name="title_gre">GRE vocabularies</string>
+    <string name="tag_toefl">toefl</string>
+    <string name="title_toefl">TOEFL vocabularies</string>
+    <string name="tag_ielts">ielts</string>
+    <string name="title_ielts">IELTS vocabularies</string>
+    <string name="dialog_deletion_completed">Deletion completed!</string>
+    <string name="vocabulary_setting">Vocabulary Settings</string>
+    <string name="group">Group</string>
+    <string name="link">Link</string>
 </resources>

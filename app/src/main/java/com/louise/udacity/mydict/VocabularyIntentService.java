@@ -4,6 +4,7 @@ import android.app.IntentService;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.Context;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 
@@ -15,6 +16,7 @@ import com.google.firebase.storage.StorageReference;
 import com.louise.udacity.lib.VocabularyProtos;
 import com.louise.udacity.lib.VocabularyReader;
 import com.louise.udacity.mydict.data.Constants;
+import com.louise.udacity.mydict.data.VocabularyContentProvider;
 import com.louise.udacity.mydict.data.VocabularyContract;
 
 import java.io.File;
@@ -33,10 +35,12 @@ import timber.log.Timber;
 public class VocabularyIntentService extends IntentService {
 
     public static final String ACTION_DOWNLOAD = "com.louise.udacity.mydict.action.download";
-    public static final String ACTION_DOWNLAOD_STATUS = "com.louise.udacity.mydict.action.download-status";
+    public static final String ACTION_STATUS = "com.louise.udacity.mydict.action.status";
+    public static final String ACTION_DELETE_LIST = "com.louise.udacity.mydict.action.delete-list";
 
     private static final String EXTRA_TAG = "com.louise.udacity.mydict.extra.tag";
-    public static final String EXTRA_DOWNLOAD_STATUS = "com.louise.udacity.mydict.extra.download-status";
+    public static final String EXTRA_STATUS_TYPE = "com.louise.udacity.mydict.extra.status-type";
+    public static final String EXTRA_STATUS = "com.louise.udacity.mydict.extra.delete-status";
 
     public VocabularyIntentService() {
         super("VocabularyIntentService");
@@ -55,6 +59,13 @@ public class VocabularyIntentService extends IntentService {
         context.startService(intent);
     }
 
+    public static void startActionDeleteList(Context context, String tag) {
+        Intent intent = new Intent(context, VocabularyIntentService.class);
+        intent.setAction(ACTION_DELETE_LIST);
+        intent.putExtra(EXTRA_TAG, tag);
+        context.startService(intent);
+    }
+
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
@@ -62,8 +73,13 @@ public class VocabularyIntentService extends IntentService {
             if (action != null) {
                 switch (action) {
                     case ACTION_DOWNLOAD:
-                        final String tag = intent.getStringExtra(EXTRA_TAG);
-                        handleActionDownload(tag);
+                        final String downloadTag = intent.getStringExtra(EXTRA_TAG);
+                        handleActionDownload(downloadTag);
+                        break;
+
+                    case ACTION_DELETE_LIST:
+                        final String deleteTag = intent.getStringExtra(EXTRA_TAG);
+                        handleActionDelete(deleteTag);
                         break;
 
                     default:
@@ -88,7 +104,8 @@ public class VocabularyIntentService extends IntentService {
         final File localFile = new File(filePath);
         localFile.deleteOnExit();
 
-        final Intent localIntent = new Intent(ACTION_DOWNLAOD_STATUS);
+        final Intent localIntent = new Intent(ACTION_STATUS);
+        localIntent.putExtra(EXTRA_STATUS_TYPE, Constants.STATUS_TYPE_DOWNLOAD);
         pathReference.getFile(localFile)
                 .addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
                     @Override
@@ -99,7 +116,7 @@ public class VocabularyIntentService extends IntentService {
                             importToDB(new FileInputStream(localFile), tag);
 
                             // Send LocalBroadcast to notify the task status
-                                    localIntent.putExtra(EXTRA_DOWNLOAD_STATUS, Constants.STATUS_SUCCEEDED);
+                            localIntent.putExtra(EXTRA_STATUS, Constants.STATUS_SUCCEEDED);
                             // Broadcasts the Intent to receivers in this app.
                             LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(localIntent);
 
@@ -114,11 +131,28 @@ public class VocabularyIntentService extends IntentService {
                     @Override
                     public void onFailure(@NonNull Exception exception) {
                         Timber.d("--------------------download failed-----------------");
-                        localIntent.putExtra(EXTRA_DOWNLOAD_STATUS, Constants.STATUS_FAILED);
+                        localIntent.putExtra(EXTRA_STATUS, Constants.STATUS_FAILED);
+                        // Broadcasts the Intent to receivers in this app.
+                        LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(localIntent);
                         exception.printStackTrace();
                     }
                 });
 
+    }
+
+    private void handleActionDelete(String deleteTag) {
+        Uri uri = VocabularyContentProvider.buildVocabularyUriWithTag(deleteTag);
+        int numDeleted = getContentResolver().delete(uri, null, null);
+
+        if (numDeleted > 0) {
+            Intent localIntent = new Intent(ACTION_STATUS);
+            // Send LocalBroadcast to notify the task status
+            localIntent.putExtra(EXTRA_STATUS_TYPE, Constants.STATUS_TYPE_DELETE);
+            localIntent.putExtra(EXTRA_STATUS, Constants.STATUS_SUCCEEDED);
+            // Broadcasts the Intent to receivers in this app.
+            LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(localIntent);
+
+        }
     }
 
     private void importToDB(InputStream inputStream, String tag) {

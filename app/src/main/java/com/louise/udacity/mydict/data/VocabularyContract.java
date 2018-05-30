@@ -22,6 +22,15 @@ public class VocabularyContract {
         public static final Uri CONTENT_URI =
                 BASE_CONTENT_URI.buildUpon().appendPath(PATH_VOCABULARY).build();
 
+        // Newly imported to database
+        public static final int STATUS_NEW = 0;
+        // After showing up in learning list
+        public static final int STATUS_LEARNED = 1;
+        // Need to be reviewed
+        public static final int STATUS_REVIEWING = 2;
+        // Will never show up in review list
+        public static final int STATUS_ARCHIVE = 3;
+
         public static final String TABLE_NAME = "vocabulary";
         public static final String COLUMN_WORD = "word";
         public static final String COLUMN_PHONETIC = "phonetic";

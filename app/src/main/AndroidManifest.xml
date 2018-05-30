@@ -3,8 +3,8 @@
     package="com.louise.udacity.mydict">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:name=".MyApp"
@@ -22,6 +22,15 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".VocabularySettingActivity"
+            android:label="@string/vocabulary_setting"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+        </activity>
+
         <service
             android:name=".VocabularyIntentService"
             android:exported="false" />
@@ -29,7 +38,8 @@
         <provider
             android:name=".data.VocabularyContentProvider"
             android:authorities="com.louise.udacity.mydict"
-            android:exported="false"/>
+            android:exported="false" />
+
     </application>
 
 </manifest>

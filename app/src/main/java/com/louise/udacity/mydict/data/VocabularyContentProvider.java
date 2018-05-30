@@ -209,4 +209,21 @@ public class VocabularyContentProvider extends ContentProvider {
     public String getType(@NonNull Uri uri) {
         return null;
     }
+
+
+    // TODO: is it appropriate to implement the random method here?
+    public Cursor retrieveRandomVocabularies(String tag, String number, int status) {
+        final SQLiteDatabase db = mVocabularyHelper.getWritableDatabase();
+        return db.query(true,
+                VocabularyContract.VocabularyEntry.TABLE_NAME,
+                null,
+                VocabularyContract.VocabularyEntry.COLUMN_TAG + "=" + tag + " AND "
+                        + VocabularyContract.VocabularyEntry.COLUMN_STATUS + "=" + status,
+                null,
+                null,
+                null,
+                "RANDOM()",
+                number);
+    }
+
 }

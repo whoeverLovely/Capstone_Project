@@ -8,7 +8,7 @@ public class VocabularyDBHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "my_dict.db";
 
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 3;
 
     public VocabularyDBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -23,8 +23,8 @@ public class VocabularyDBHelper extends SQLiteOpenHelper {
                 VocabularyContract.VocabularyEntry.COLUMN_DEFINITION + " TEXT NOT NULL, " +
                 VocabularyContract.VocabularyEntry.COLUMN_TRANSLATION + " TEXT NOT NULL, " +
                 VocabularyContract.VocabularyEntry.COLUMN_TAG + " TEXT NOT NULL, " +
-                VocabularyContract.VocabularyEntry.COLUMN_STATUS + " INTEGER NOT NULL, " +
-                VocabularyContract.VocabularyEntry.COLUMN_GROUP_ID + " INTEGER NOT NULL)";
+                VocabularyContract.VocabularyEntry.COLUMN_STATUS + " INTEGER DEFAULT 0, " +
+                VocabularyContract.VocabularyEntry.COLUMN_GROUP_ID + " INTEGER)";
 
         db.execSQL(SQL_CREATE_MOVIES_TABLE);
     }

@@ -11,7 +11,7 @@ public class VocabularyContract {
     public static final Uri BASE_CONTENT_URI = Uri.parse("content://" + AUTHORITY);
 
     // Define the possible paths for accessing data in this contract
-    public static final String PATH_VOCABULARY = "vocab";
+    public static final String PATH_VOCABULARY = "vocabulary";
     public static final String PATH_GROUP = "group";
 
     public static final long INVALID_VOCABULARY_ID = -1;

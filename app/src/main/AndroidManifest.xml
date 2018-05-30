@@ -25,6 +25,11 @@
         <service
             android:name=".VocabularyIntentService"
             android:exported="false" />
+
+        <provider
+            android:name=".data.VocabularyContentProvider"
+            android:authorities="com.louise.udacity.mydict"
+            android:exported="false"/>
     </application>
 
 </manifest>

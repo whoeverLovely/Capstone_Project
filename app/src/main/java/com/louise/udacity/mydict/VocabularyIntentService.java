@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
@@ -98,7 +99,9 @@ public class VocabularyIntentService extends IntentService {
                     case ACTION_GENERATE_LEARN_LIST:
                         final String tag = intent.getStringExtra(EXTRA_TAG);
                         // TODO read number form shared preference
-                        handleActionGenLearnList(tag, 20);
+                        int dailyNumber = PreferenceManager.getDefaultSharedPreferences(this)
+                                .getInt(getString(R.string.pref_daily_count_key), getResources().getInteger(R.integer.daily_number_default));
+                        handleActionGenLearnList(tag, dailyNumber);
                         break;
 
                     default:

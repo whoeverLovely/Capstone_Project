@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <MultiSelectListPreference android:key="@string/pref_list_tag_key"
+        android:title="@string/vocabulary_list"
+        android:dialogTitle="@string/select_list_tag"
+        android:entries="@string-array/list_tag_arr_key"
+        android:entryValues="@string-array/list_tag_arr_value"/>
+
+    <ListPreference
+        android:key="@string/pref_daily_count_key"
+        android:title="@string/daily_vocabulary_number"
+        android:dialogTitle="@string/set_vocabulary_number"
+        android:entries="@integer-array/daily_number_arr"
+        android:entryValues="@integer-array/daily_number_arr"
+        android:defaultValue="@integer/daily_number_default" />
+
+</PreferenceScreen>

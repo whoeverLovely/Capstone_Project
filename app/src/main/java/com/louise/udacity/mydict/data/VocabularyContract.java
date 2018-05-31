@@ -39,6 +39,7 @@ public class VocabularyContract {
         public static final String COLUMN_TAG = "tag";
         public static final String COLUMN_STATUS = "status";
         public static final String COLUMN_GROUP_ID = "groupId";
+        public static final String COLUMN_DATE = "date";
 
     }
 

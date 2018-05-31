@@ -4,8 +4,10 @@ import android.app.IntentService;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.Context;
+import android.database.Cursor;
 import android.net.Uri;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 
 import com.google.android.gms.tasks.OnFailureListener;
@@ -18,6 +20,8 @@ import com.louise.udacity.lib.VocabularyReader;
 import com.louise.udacity.mydict.data.Constants;
 import com.louise.udacity.mydict.data.VocabularyContentProvider;
 import com.louise.udacity.mydict.data.VocabularyContract;
+
+import org.joda.time.LocalDate;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,10 +41,12 @@ public class VocabularyIntentService extends IntentService {
     public static final String ACTION_DOWNLOAD = "com.louise.udacity.mydict.action.download";
     public static final String ACTION_STATUS = "com.louise.udacity.mydict.action.status";
     public static final String ACTION_DELETE_LIST = "com.louise.udacity.mydict.action.delete-list";
+    public static final String ACTION_GENERATE_LEARN_LIST = "com.louise.udacity.mydict.action.list";
 
     private static final String EXTRA_TAG = "com.louise.udacity.mydict.extra.tag";
     public static final String EXTRA_STATUS_TYPE = "com.louise.udacity.mydict.extra.status-type";
     public static final String EXTRA_STATUS = "com.louise.udacity.mydict.extra.delete-status";
+    public static final String EXTRA_LIST_TYPE = "com.louise.udacity.mydict.action.list-type";
 
     public VocabularyIntentService() {
         super("VocabularyIntentService");
@@ -66,6 +72,13 @@ public class VocabularyIntentService extends IntentService {
         context.startService(intent);
     }
 
+    public static void startActionGenLearnList(Context context, @Nullable String tag) {
+        Intent intent = new Intent(context, VocabularyIntentService.class);
+        intent.setAction(ACTION_GENERATE_LEARN_LIST);
+        intent.putExtra(EXTRA_TAG, tag);
+        context.startService(intent);
+    }
+
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
@@ -80,6 +93,12 @@ public class VocabularyIntentService extends IntentService {
                     case ACTION_DELETE_LIST:
                         final String deleteTag = intent.getStringExtra(EXTRA_TAG);
                         handleActionDelete(deleteTag);
+                        break;
+
+                    case ACTION_GENERATE_LEARN_LIST:
+                        final String tag = intent.getStringExtra(EXTRA_TAG);
+                        // TODO read number form shared preference
+                        handleActionGenLearnList(tag, 20);
                         break;
 
                     default:
@@ -155,6 +174,46 @@ public class VocabularyIntentService extends IntentService {
         }
     }
 
+    // Update COLUMN_DATE to current date
+    private void handleActionGenLearnList(String tag, int number) {
+        LocalDate localDate = LocalDate.now();
+        String curentDate = localDate.toString();
+
+        ContentValues cv = new ContentValues();
+        cv.put(VocabularyContract.VocabularyEntry.COLUMN_DATE, curentDate);
+
+        String sqlWhere;
+        if (tag == null)
+            // randomly select from the table which status is 0
+            sqlWhere = VocabularyContract.VocabularyEntry._ID + " IN (SELECT " + VocabularyContract.VocabularyEntry._ID
+                    + " FROM " + VocabularyContract.VocabularyEntry.TABLE_NAME
+                    + " WHERE " + VocabularyContract.VocabularyEntry.COLUMN_STATUS + "=" + 0
+                    + " AND " + VocabularyContract.VocabularyEntry.COLUMN_DATE + " is null "
+                    + " ORDER BY RANDOM() LIMIT "
+                    + number + ")";
+
+        else
+            sqlWhere = VocabularyContract.VocabularyEntry._ID + " IN (SELECT " + VocabularyContract.VocabularyEntry._ID
+                    + " FROM " + VocabularyContract.VocabularyEntry.TABLE_NAME
+                    + " WHERE " + VocabularyContract.VocabularyEntry.COLUMN_STATUS + "=" + 0
+                    + " AND " + VocabularyContract.VocabularyEntry.COLUMN_TAG + "=" + tag
+                    + " AND " + VocabularyContract.VocabularyEntry.COLUMN_DATE + " is null "
+                    + " ORDER BY RANDOM() LIMIT "
+                    + number + ")";
+
+        int itemUpdated = getContentResolver()
+                .update(VocabularyContract.VocabularyEntry.CONTENT_URI,
+                        cv,
+                        sqlWhere,
+                        null);
+
+        Timber.d("Selected vocabularies : " + itemUpdated);
+    }
+
+    private void handleActionConvertReview() {
+
+    }
+
     private void importToDB(InputStream inputStream, String tag) {
         List<VocabularyProtos.Vocabulary> vocabularyList = VocabularyReader.parseProto(inputStream);
         if (vocabularyList != null) {
@@ -186,7 +245,6 @@ public class VocabularyIntentService extends IntentService {
         }
 
         Timber.d("Here is import to DB.");
-
     }
 }
 

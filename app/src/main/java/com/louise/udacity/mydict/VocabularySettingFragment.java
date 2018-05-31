@@ -11,12 +11,27 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.CheckBoxPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ProgressBar;
 
 import com.louise.udacity.mydict.data.Constants;
 
 import timber.log.Timber;
 
 public class VocabularySettingFragment extends PreferenceFragmentCompat implements Preference.OnPreferenceChangeListener {
+
+    CheckBoxPreference checkBoxPreference;
+    /*ProgressBar mProgressBar;*/
+
+/*    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = super.onCreateView(inflater, container, savedInstanceState);
+        mProgressBar = view.findViewById(R.id.progress);
+        return view;
+    }*/
+
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.settings_vocabulary);
@@ -30,23 +45,25 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat implemen
         prefGre.setOnPreferenceChangeListener(this);
         prefToefl.setOnPreferenceChangeListener(this);
         prefIelts.setOnPreferenceChangeListener(this);
+
     }
 
     @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
         String tag = preference.getKey();
-        CheckBoxPreference checkBoxPreference = (CheckBoxPreference)preference;
+        checkBoxPreference = (CheckBoxPreference) preference;
 
         if (checkBoxPreference.isChecked()) {
             // Delete the list from local db
             Timber.d("Unchecked preference");
             VocabularyIntentService.startActionDeleteList(getContext(), tag);
-            checkBoxPreference.setChecked(false);
+            /*mProgressBar.setVisibility(View.VISIBLE);*/
+
         } else {
             // Download the list and import to local db
             Timber.d("Checked preference");
             VocabularyIntentService.startActionDownloadVocabulary(getContext(), tag);
-            checkBoxPreference.setChecked(true);
+
         }
         return false;
     }
@@ -70,6 +87,8 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat implemen
                                 }
                             })
                             .show();
+                    /*mProgressBar.setVisibility(View.GONE);*/
+                    checkBoxPreference.setChecked(true);
                 }
             } else if (Constants.STATUS_TYPE_DELETE.equals(statusType)) {
                 if (Constants.STATUS_SUCCEEDED.equals(status)) {
@@ -81,6 +100,8 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat implemen
                                 }
                             })
                             .show();
+                    /*mProgressBar.setVisibility(View.GONE);*/
+                    checkBoxPreference.setChecked(false);
                 }
             }
         }

@@ -13,4 +13,6 @@
     <string name="vocabulary_setting">Vocabulary Settings</string>
     <string name="group">Group</string>
     <string name="link">Link</string>
+    <string name="complete_learning_list">Congratulations! You\'ve completed all vocabularies learning for today!</string>
+    <string name="ok">OK</string>
 </resources>

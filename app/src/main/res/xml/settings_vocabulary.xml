@@ -13,4 +13,6 @@
         android:key="@string/tag_ielts"
         android:title="@string/title_ielts"/>
 
+    <Preference android:widgetLayout="@layout/progress_bar_widget" />
+
 </PreferenceScreen>

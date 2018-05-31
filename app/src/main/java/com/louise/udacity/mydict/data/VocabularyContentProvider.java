@@ -14,6 +14,16 @@ import android.support.annotation.Nullable;
 
 import com.louise.udacity.lib.VocabularyProtos;
 
+import org.joda.time.Days;
+import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+
+import timber.log.Timber;
+
 
 public class VocabularyContentProvider extends ContentProvider {
 
@@ -66,6 +76,7 @@ public class VocabularyContentProvider extends ContentProvider {
 
         switch (match) {
             case VOCABULARY:
+
                 retCursor = db.query(VocabularyContract.VocabularyEntry.TABLE_NAME,
                         projection,
                         selection,
@@ -201,29 +212,35 @@ public class VocabularyContentProvider extends ContentProvider {
 
     @Override
     public int update(@NonNull Uri uri, @Nullable ContentValues values, @Nullable String selection, @Nullable String[] selectionArgs) {
-        return 0;
+        // Get access to the database and write URI matching code to recognize a single item
+        final SQLiteDatabase db = mVocabularyHelper.getWritableDatabase();
+        int match = sUriMatcher.match(uri);
+
+        // Keep track the number of updated vocabulary
+        int vocabularyUpdated; // starts as 0
+        switch (match) {
+            case VOCABULARY:
+                vocabularyUpdated = db.update(VocabularyContract.VocabularyEntry.TABLE_NAME,
+                        values,
+                        selection,
+                        selectionArgs);
+                break;
+
+            default:
+                throw new UnsupportedOperationException("Unknown uri: " + uri);
+        }
+        // Notify the resolver of a change and return the number of items deleted
+        if (vocabularyUpdated != 0) {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
+        // Return the number of plant deleted
+        return vocabularyUpdated;
     }
 
     @Nullable
     @Override
     public String getType(@NonNull Uri uri) {
         return null;
-    }
-
-
-    // TODO: is it appropriate to implement the random method here?
-    public Cursor retrieveRandomVocabularies(String tag, String number, int status) {
-        final SQLiteDatabase db = mVocabularyHelper.getWritableDatabase();
-        return db.query(true,
-                VocabularyContract.VocabularyEntry.TABLE_NAME,
-                null,
-                VocabularyContract.VocabularyEntry.COLUMN_TAG + "=" + tag + " AND "
-                        + VocabularyContract.VocabularyEntry.COLUMN_STATUS + "=" + status,
-                null,
-                null,
-                null,
-                "RANDOM()",
-                number);
     }
 
 }

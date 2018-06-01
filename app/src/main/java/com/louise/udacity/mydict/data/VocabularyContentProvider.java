@@ -31,6 +31,7 @@ public class VocabularyContentProvider extends ContentProvider {
     public static final int VOCABULARY_WITH_WORD = 101;
     public static final int VOCABULARY_WITH_TAG = 102;
     public static final int VOCABULARY_WITH_ID = 103;
+    public static final int VOCABULATY_NUM_FOR_TODAY = 104;
 
     private static final UriMatcher sUriMatcher = buildUriMatcher();
 
@@ -43,6 +44,7 @@ public class VocabularyContentProvider extends ContentProvider {
         uriMatcher.addURI(VocabularyContract.AUTHORITY, VocabularyContract.PATH_VOCABULARY + "/word/*", VOCABULARY_WITH_WORD);
         uriMatcher.addURI(VocabularyContract.AUTHORITY, VocabularyContract.PATH_VOCABULARY + "/tag/*", VOCABULARY_WITH_TAG);
         uriMatcher.addURI(VocabularyContract.AUTHORITY, VocabularyContract.PATH_VOCABULARY + "/#", VOCABULARY_WITH_ID);
+        uriMatcher.addURI(VocabularyContract.AUTHORITY, VocabularyContract.PATH_VOCABULARY + "/today/#", VOCABULATY_NUM_FOR_TODAY);
 
         return uriMatcher;
     }
@@ -53,6 +55,10 @@ public class VocabularyContentProvider extends ContentProvider {
 
     public static Uri buildVocabularyUriWithTag(String tag) {
         return VocabularyContract.VocabularyEntry.CONTENT_URI.buildUpon().appendPath("tag").appendPath(tag).build();
+    }
+
+    public static Uri buildVocabularyNumForTodayUri(int status) {
+        return VocabularyContract.VocabularyEntry.CONTENT_URI.buildUpon().appendPath("today").appendPath(String.valueOf(status)).build();
     }
 
     private VocabularyDBHelper mVocabularyHelper;
@@ -101,6 +107,20 @@ public class VocabularyContentProvider extends ContentProvider {
                         projection,
                         VocabularyContract.VocabularyEntry._ID + "=?",
                         new String[]{uri.getLastPathSegment()},
+                        null,
+                        null,
+                        sortOrder);
+                break;
+
+            case VOCABULATY_NUM_FOR_TODAY:
+                // Only if vocabularies for today is less than the number user set, generate new learning list
+                LocalDate localDate = LocalDate.now();
+                String curentDate = localDate.toString();
+                retCursor = db.query(VocabularyContract.VocabularyEntry.TABLE_NAME,
+                        projection,
+                        VocabularyContract.VocabularyEntry.COLUMN_STATUS + "=? AND "
+                                + VocabularyContract.VocabularyEntry.COLUMN_DATE + "<=?",
+                        new String[]{uri.getLastPathSegment(), curentDate},
                         null,
                         null,
                         sortOrder);
@@ -199,6 +219,7 @@ public class VocabularyContentProvider extends ContentProvider {
                         VocabularyContract.VocabularyEntry.COLUMN_TAG + "=?",
                         new String[]{uri.getLastPathSegment()});
                 break;
+
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
@@ -226,6 +247,13 @@ public class VocabularyContentProvider extends ContentProvider {
                         selectionArgs);
                 break;
 
+            case VOCABULARY_WITH_ID:
+                vocabularyUpdated = db.update(VocabularyContract.VocabularyEntry.TABLE_NAME,
+                        values,
+                        VocabularyContract.VocabularyEntry._ID + "=" + uri.getLastPathSegment(),
+                        null);
+                break;
+
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
@@ -241,6 +269,17 @@ public class VocabularyContentProvider extends ContentProvider {
     @Override
     public String getType(@NonNull Uri uri) {
         return null;
+    }
+
+    public static int getVocabularyNumForToday(Context context, int status) {
+        Cursor cursor = context.getContentResolver().query(buildVocabularyNumForTodayUri(status),
+                new String[]{VocabularyContract.VocabularyEntry._ID},
+                null,
+                null,
+                null);
+        if (cursor != null)
+            return cursor.getCount();
+        return -1;
     }
 
 }

@@ -6,13 +6,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.MenuItem;
 
+import timber.log.Timber;
+
 public class VocabularySettingActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_vocabulary_setting);
-
         ActionBar actionBar = this.getSupportActionBar();
         // Set the action bar back button to look like an up button
         if (actionBar != null) {

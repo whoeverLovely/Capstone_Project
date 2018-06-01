@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <array name="daily_number_arr">
+        <item>"10"</item>
+        <item>"20"</item>
+        <item>"30"</item>
+        <item>"40"</item>
+        <item>"50"</item>
+    </array>
+
+    <array name="list_tag_arr_label">
+        <item>@string/title_gre</item>
+        <item>@string/title_ielts</item>
+        <item>@string/title_toefl</item>
+    </array>
+
+    <array name="list_tag_arr_value">
+        <item>@string/tag_gre</item>
+        <item>@string/tag_ielts</item>
+        <item>@string/tag_toefl</item>
+    </array>
+
+</resources>

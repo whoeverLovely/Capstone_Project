@@ -21,26 +21,6 @@
     <string name="select_list_tag">Please select vocabulary list(s) you want to learn</string>
     <string name="pref_list_tag_key">pref_list_tag</string>
     <string name="pref_daily_count_key">pref_daily_count</string>
-
-    <integer-array name="daily_number_arr">
-        <item>10</item>
-        <item>20</item>
-        <item>30</item>
-        <item>40</item>
-        <item>50</item>
-    </integer-array>
-    <integer name="daily_number_default">20</integer>
-
-    <string-array name="list_tag_arr_key">
-        <item>@string/tag_gre</item>
-        <item>@string/tag_ielts</item>
-        <item>@string/tag_toefl</item>
-    </string-array>
-
-    <string-array name="list_tag_arr_value">
-        <item>@string/title_gre</item>
-        <item>@string/title_ielts</item>
-        <item>@string/title_toefl</item>
-    </string-array>
+    <string name="list_is_empty">Learning list is empty, please download new list!</string>
 
 </resources>

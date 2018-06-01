@@ -1,6 +1,7 @@
 package com.louise.udacity.mydict;
 
 import android.app.IntentService;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.Context;
@@ -43,11 +44,13 @@ public class VocabularyIntentService extends IntentService {
     public static final String ACTION_STATUS = "com.louise.udacity.mydict.action.status";
     public static final String ACTION_DELETE_LIST = "com.louise.udacity.mydict.action.delete-list";
     public static final String ACTION_GENERATE_LEARN_LIST = "com.louise.udacity.mydict.action.list";
+    public static final String ACTION_UPDATE_STATUS = "com.louise.udacity.mydict.action.update-status";
 
     private static final String EXTRA_TAG = "com.louise.udacity.mydict.extra.tag";
     public static final String EXTRA_STATUS_TYPE = "com.louise.udacity.mydict.extra.status-type";
     public static final String EXTRA_STATUS = "com.louise.udacity.mydict.extra.delete-status";
     public static final String EXTRA_LIST_TYPE = "com.louise.udacity.mydict.action.list-type";
+    public static final String EXTRA_VOCABULARY_ID = "com.louise.udacity.mydict.action.vocab-id";
 
     public VocabularyIntentService() {
         super("VocabularyIntentService");
@@ -80,6 +83,14 @@ public class VocabularyIntentService extends IntentService {
         context.startService(intent);
     }
 
+    public static void startActionUpdateStatus(Context context, int status, long id) {
+        Intent intent = new Intent(context, VocabularyIntentService.class);
+        intent.setAction(ACTION_UPDATE_STATUS);
+        intent.putExtra(EXTRA_TAG, status);
+        intent.putExtra(EXTRA_VOCABULARY_ID, id);
+        context.startService(intent);
+    }
+
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
@@ -98,10 +109,16 @@ public class VocabularyIntentService extends IntentService {
 
                     case ACTION_GENERATE_LEARN_LIST:
                         final String tag = intent.getStringExtra(EXTRA_TAG);
-                        // TODO read number form shared preference
-                        int dailyNumber = PreferenceManager.getDefaultSharedPreferences(this)
-                                .getInt(getString(R.string.pref_daily_count_key), getResources().getInteger(R.integer.daily_number_default));
-                        handleActionGenLearnList(tag, dailyNumber);
+                        String dailyCountStr = PreferenceManager.getDefaultSharedPreferences(VocabularyIntentService.this)
+                                .getString(getString(R.string.pref_daily_count_key), Constants.DEFAULT_DAILY_COUNT);
+                        int dailyCount = Integer.parseInt(dailyCountStr);
+                        handleActionGenLearnList(tag, dailyCount);
+                        break;
+
+                    case ACTION_UPDATE_STATUS:
+                        int status = intent.getIntExtra(EXTRA_STATUS, -1);
+                        long vocabId = intent.getLongExtra(EXTRA_VOCABULARY_ID, -1);
+                        handleActionUpdateStatus(status, vocabId);
                         break;
 
                     default:
@@ -111,8 +128,17 @@ public class VocabularyIntentService extends IntentService {
         }
     }
 
+    private void handleActionUpdateStatus(int status, long vocabId) {
+        ContentValues cv = new ContentValues();
+        cv.put(VocabularyContract.VocabularyEntry.COLUMN_STATUS, status);
+        getContentResolver().update(ContentUris.withAppendedId(VocabularyContract.VocabularyEntry.CONTENT_URI, vocabId),
+                cv,
+                null,
+                null);
+    }
+
     private void handleActionDownload(final String tag) {
-        Timber.d("----------------------------download started-------------------------------");
+
 
         // Create an instance of FirebaseStorage
         FirebaseStorage storage = FirebaseStorage.getInstance();
@@ -120,6 +146,8 @@ public class VocabularyIntentService extends IntentService {
         StorageReference storageRef = storage.getReference();
         // Create a reference with an initial file path and name
         StorageReference pathReference = storageRef.child(tag + "_list");
+
+        Timber.d("----------------------------download started: " + tag + "_list" + "-------------------------------");
 
         // Download to a local file
         String filePath = VocabularyIntentService.this.getFilesDir().getPath() + tag + "_list";
@@ -141,6 +169,17 @@ public class VocabularyIntentService extends IntentService {
                             localIntent.putExtra(EXTRA_STATUS, Constants.STATUS_SUCCEEDED);
                             // Broadcasts the Intent to receivers in this app.
                             LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(localIntent);
+
+                            // Only if vocabularies for today is less than the number user set, generate new learning list
+                            int num = VocabularyContentProvider.getVocabularyNumForToday(VocabularyIntentService.this,
+                                    VocabularyContract.VocabularyEntry.STATUS_LEARNING);
+
+                            String dailyCountStr = PreferenceManager.getDefaultSharedPreferences(VocabularyIntentService.this)
+                                    .getString(getString(R.string.pref_daily_count_key), Constants.DEFAULT_DAILY_COUNT);
+                            Timber.d("dailyCount retrieved from sharedPreference is " + dailyCountStr);
+                            int dailyCount = Integer.parseInt(dailyCountStr);
+                            if (num <= dailyCount)
+                                handleActionGenLearnList(null, dailyCount);
 
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
@@ -165,7 +204,7 @@ public class VocabularyIntentService extends IntentService {
     private void handleActionDelete(String deleteTag) {
         Uri uri = VocabularyContentProvider.buildVocabularyUriWithTag(deleteTag);
         int numDeleted = getContentResolver().delete(uri, null, null);
-
+        Timber.d("--------------------deleted " + numDeleted + " entries from " + deleteTag + "-----------------");
         if (numDeleted > 0) {
             Intent localIntent = new Intent(ACTION_STATUS);
             // Send LocalBroadcast to notify the task status
@@ -173,7 +212,6 @@ public class VocabularyIntentService extends IntentService {
             localIntent.putExtra(EXTRA_STATUS, Constants.STATUS_SUCCEEDED);
             // Broadcasts the Intent to receivers in this app.
             LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(localIntent);
-
         }
     }
 
@@ -184,6 +222,7 @@ public class VocabularyIntentService extends IntentService {
 
         ContentValues cv = new ContentValues();
         cv.put(VocabularyContract.VocabularyEntry.COLUMN_DATE, curentDate);
+        cv.put(VocabularyContract.VocabularyEntry.COLUMN_STATUS, VocabularyContract.VocabularyEntry.STATUS_LEARNING);
 
         String sqlWhere;
         if (tag == null)
@@ -247,7 +286,6 @@ public class VocabularyIntentService extends IntentService {
             localFile.deleteOnExit();
         }
 
-        Timber.d("Here is import to DB.");
     }
 }
 

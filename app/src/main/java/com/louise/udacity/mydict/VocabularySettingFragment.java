@@ -11,6 +11,7 @@ import android.support.v14.preference.MultiSelectListPreference;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.CheckBoxPreference;
+import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceManager;
@@ -24,24 +25,23 @@ import timber.log.Timber;
 public class VocabularySettingFragment extends PreferenceFragmentCompat
         implements Preference.OnPreferenceChangeListener, SharedPreferences.OnSharedPreferenceChangeListener {
 
-    CheckBoxPreference checkBoxPreference;
     Set<String> existingTags;
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.settings);
-
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mMessageReceiver,
                 new IntentFilter(VocabularyIntentService.ACTION_STATUS));
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        existingTags = sharedPreferences.getStringSet(getString(R.string.pref_list_tag_key), null);
+        Preference preference = findPreference(getString(R.string.pref_list_tag_key));
+        preference.setOnPreferenceChangeListener(this);
 
     }
 
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+
 
             AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(getActivity());
 
@@ -58,8 +58,6 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
                                 }
                             })
                             .show();
-                    /*mProgressBar.setVisibility(View.GONE);*/
-                    checkBoxPreference.setChecked(true);
                 }
             } else if (Constants.STATUS_TYPE_DELETE.equals(statusType)) {
                 if (Constants.STATUS_SUCCEEDED.equals(status)) {
@@ -71,8 +69,6 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
                                 }
                             })
                             .show();
-                    /*mProgressBar.setVisibility(View.GONE);*/
-                    checkBoxPreference.setChecked(false);
                 }
             }
         }
@@ -80,30 +76,42 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        Preference preference = findPreference(key);
+
+
+    }
+
+    @Override
+    public boolean onPreferenceChange(Preference preference, Object newValue) {
+        Timber.d(preference.getKey() + " updated");
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        existingTags = sharedPreferences.getStringSet(getString(R.string.pref_list_tag_key), null);
+
         String prefListTagKey = getString(R.string.pref_list_tag_key);
+        MultiSelectListPreference listPreference = (MultiSelectListPreference)preference;
+
         if (prefListTagKey.equals(preference.getKey())) {
-            Set<String> tags = ((MultiSelectListPreference) preference).getValues();
+            Set<String> tags = (Set<String>) newValue;
 
             // Download lists which is not in the existingTags
             for (String tag : tags) {
-                if (existingTags != null && existingTags.contains(tag)) {
-                    return;
-                } else {
+                int prefIndex = listPreference.findIndexOfValue(tag);
+
+                Timber.d("new tag: " + tag);
+                if (existingTags == null ||existingTags.size() == 0 || !existingTags.contains(tag)) {
+
+                    Timber.d("Starting download " + tag);
                     VocabularyIntentService.startActionDownloadVocabulary(getContext(), tag);
                 }
             }
 
             // Deleted lists which is in the exsitingTags but not in tags
-            for (String tag : existingTags) {
-                if (!tags.contains(tag))
-                    VocabularyIntentService.startActionDeleteList(getContext(), tag);
+            if (existingTags != null) {
+                for (String tag : existingTags) {
+                    if (tags.size() == 0 || !tags.contains(tag))
+                        VocabularyIntentService.startActionDeleteList(getContext(), tag);
+                }
             }
         }
-    }
-
-    @Override
-    public boolean onPreferenceChange(Preference preference, Object newValue) {
-        return false;
+        return true;
     }
 }

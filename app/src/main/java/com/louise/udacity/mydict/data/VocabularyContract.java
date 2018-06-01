@@ -24,12 +24,14 @@ public class VocabularyContract {
 
         // Newly imported to database
         public static final int STATUS_NEW = 0;
+        // In daily learning list but hasn't been learned
+        public static final int STATUS_LEARNING = 1;
         // After showing up in learning list
-        public static final int STATUS_LEARNED = 1;
+        public static final int STATUS_LEARNED = 2;
         // Need to be reviewed
-        public static final int STATUS_REVIEWING = 2;
+        public static final int STATUS_REVIEWING = 3;
         // Will never show up in review list
-        public static final int STATUS_ARCHIVE = 3;
+        public static final int STATUS_ARCHIVE = 4;
 
         public static final String TABLE_NAME = "vocabulary";
         public static final String COLUMN_WORD = "word";

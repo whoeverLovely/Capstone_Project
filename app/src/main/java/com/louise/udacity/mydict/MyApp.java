@@ -12,5 +12,7 @@ public class MyApp extends Application {
         super.onCreate();
 
         Timber.plant(new Timber.DebugTree());
+
+        JobScheduler.scheduleLearnListGen(this);
     }
 }

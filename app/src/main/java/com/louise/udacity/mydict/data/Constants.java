@@ -7,4 +7,6 @@ public class Constants {
     public static final String STATUS_TYPE_DOWNLOAD = "download";
     public static final String STATUS_TYPE_DELETE = "delete";
 
+    public static final String DEFAULT_DAILY_COUNT = "20";
+
 }

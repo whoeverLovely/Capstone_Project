@@ -4,6 +4,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class ClientVocabulary implements Parcelable {
+
+    private long id;
     private String word;
     private String phonetic;
     private String definition;
@@ -38,6 +40,15 @@ public class ClientVocabulary implements Parcelable {
 
     public void setGroupId(int groupId) {
         this.groupId = groupId;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public long getId() {
+
+        return id;
     }
 
     public String getWord() {

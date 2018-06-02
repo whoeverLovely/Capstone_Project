@@ -5,7 +5,6 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.Context;
-import android.database.Cursor;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -45,12 +44,16 @@ public class VocabularyIntentService extends IntentService {
     public static final String ACTION_DELETE_LIST = "com.louise.udacity.mydict.action.delete-list";
     public static final String ACTION_GENERATE_LEARN_LIST = "com.louise.udacity.mydict.action.list";
     public static final String ACTION_UPDATE_STATUS = "com.louise.udacity.mydict.action.update-status";
+    public static final String ACTION_UPDATE_REVIEW_LIST = "com.louise.udacity.mydict.action.update-review-list";
 
     private static final String EXTRA_TAG = "com.louise.udacity.mydict.extra.tag";
     public static final String EXTRA_STATUS_TYPE = "com.louise.udacity.mydict.extra.status-type";
     public static final String EXTRA_STATUS = "com.louise.udacity.mydict.extra.delete-status";
     public static final String EXTRA_LIST_TYPE = "com.louise.udacity.mydict.action.list-type";
     public static final String EXTRA_VOCABULARY_ID = "com.louise.udacity.mydict.action.vocab-id";
+    public static final String EXTRA_IDLIST = "com.louise.udacity.mydict.action.id-list";
+
+    final Intent notifyIntent = new Intent(ACTION_STATUS);
 
     public VocabularyIntentService() {
         super("VocabularyIntentService");
@@ -91,6 +94,12 @@ public class VocabularyIntentService extends IntentService {
         context.startService(intent);
     }
 
+    public static void startActionUpdateReviewList(Context context) {
+        Intent intent = new Intent(context, VocabularyIntentService.class);
+        intent.setAction(ACTION_UPDATE_REVIEW_LIST);
+        context.startService(intent);
+    }
+
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
@@ -121,11 +130,33 @@ public class VocabularyIntentService extends IntentService {
                         handleActionUpdateStatus(status, vocabId);
                         break;
 
+                    case ACTION_UPDATE_REVIEW_LIST:
+                        handleActionUpdateReviewList();
+                        break;
+
                     default:
                         throw new RuntimeException("The action requested is invalid!");
                 }
             }
         }
+    }
+
+    private void handleActionUpdateReviewList() {
+        LocalDate targetDate = LocalDate.now().minusDays(getResources().getInteger(R.integer.review_interval_days));
+        String targetDateStr = targetDate.toString();
+
+        ContentValues cv = new ContentValues();
+        cv.put(VocabularyContract.VocabularyEntry.COLUMN_STATUS, VocabularyContract.VocabularyEntry.STATUS_REVIEWING);
+        int reviewVocabAdded = getContentResolver().update(VocabularyContract.VocabularyEntry.CONTENT_URI,
+                cv,
+                VocabularyContract.VocabularyEntry.COLUMN_STATUS + "=? AND "
+                        + VocabularyContract.VocabularyEntry.COLUMN_DATE + "<=?",
+                new String[]{String.valueOf(VocabularyContract.VocabularyEntry.STATUS_LEARNED), targetDateStr});
+
+        if (reviewVocabAdded > 0)
+            Timber.d("------------------------" + reviewVocabAdded + " vocabularies added to review list----------------------");
+        else
+            Timber.d("No new vocabularies added to reviewing list!");
     }
 
     private void handleActionUpdateStatus(int status, long vocabId) {
@@ -154,8 +185,7 @@ public class VocabularyIntentService extends IntentService {
         final File localFile = new File(filePath);
         localFile.deleteOnExit();
 
-        final Intent localIntent = new Intent(ACTION_STATUS);
-        localIntent.putExtra(EXTRA_STATUS_TYPE, Constants.STATUS_TYPE_DOWNLOAD);
+        notifyIntent.putExtra(EXTRA_STATUS_TYPE, Constants.STATUS_TYPE_DOWNLOAD);
         pathReference.getFile(localFile)
                 .addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
                     @Override
@@ -166,9 +196,9 @@ public class VocabularyIntentService extends IntentService {
                             importToDB(new FileInputStream(localFile), tag);
 
                             // Send LocalBroadcast to notify the task status
-                            localIntent.putExtra(EXTRA_STATUS, Constants.STATUS_SUCCEEDED);
+                            notifyIntent.putExtra(EXTRA_STATUS, Constants.STATUS_SUCCEEDED);
                             // Broadcasts the Intent to receivers in this app.
-                            LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(localIntent);
+                            LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(notifyIntent);
 
                             // Only if vocabularies for today is less than the number user set, generate new learning list
                             int num = VocabularyContentProvider.getVocabularyNumForToday(VocabularyIntentService.this,
@@ -192,9 +222,9 @@ public class VocabularyIntentService extends IntentService {
                     @Override
                     public void onFailure(@NonNull Exception exception) {
                         Timber.d("--------------------download failed-----------------");
-                        localIntent.putExtra(EXTRA_STATUS, Constants.STATUS_FAILED);
+                        notifyIntent.putExtra(EXTRA_STATUS, Constants.STATUS_FAILED);
                         // Broadcasts the Intent to receivers in this app.
-                        LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(localIntent);
+                        LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(notifyIntent);
                         exception.printStackTrace();
                     }
                 });

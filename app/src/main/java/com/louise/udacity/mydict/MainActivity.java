@@ -23,6 +23,7 @@ import android.widget.TextView;
 
 import com.google.android.gms.common.api.Api;
 import com.louise.udacity.mydict.data.ClientVocabulary;
+import com.louise.udacity.mydict.data.VocabularyContentProvider;
 import com.louise.udacity.mydict.data.VocabularyContract;
 
 import org.joda.time.LocalDate;
@@ -49,11 +50,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     TextView textViewTranslation;
 
     private static final int LOADER_LEARN_LIST_ID = 100;
+    private static final int LOADER_REVIEW_LIST_ID = 200;
     private static Cursor mCursor = null;
     private static int currentItemIndex;
     private static boolean isDialogDisplay;
     private static AlertDialog.Builder dialogBuilder;
     private static ClientVocabulary mClientVocabulary;
+    private static String currentList;
 
     private static final String STATE_KEY_DISPLAY_DIALOG = "isDialogDisplay";
 
@@ -77,9 +80,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             @Override
             public void onClick(View v) {
                 // Set status to STATUS_ARCHIVE which will never appear in review or learn list
-                updateStatus(VocabularyContract.VocabularyEntry.STATUS_ARCHIVE,mClientVocabulary.getId());
+                updateStatus(VocabularyContract.VocabularyEntry.STATUS_ARCHIVE, mClientVocabulary.getId());
 
-                Snackbar.make(v, "The word is archived. It'll not appear in review list in the future!",Snackbar.LENGTH_SHORT)
+                Snackbar.make(v, "The word is archived. It'll not appear in review list in the future!", Snackbar.LENGTH_SHORT)
                         .show();
 
                 displayNextVocabulary();
@@ -96,25 +99,51 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     dialog.dismiss();
+
+                                    Intent intent = new Intent(MainActivity.this, VocabularySettingActivity.class);
+                                    startActivity(intent);
                                 }
                             });
                     dialogBuilder.show();
                     isDialogDisplay = true;
 
                 } else if (currentItemIndex == mCursor.getCount() - 1) {
-                    dialogBuilder = new AlertDialog.Builder(MainActivity.this).setMessage(R.string.complete_learning_list)
-                            .setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    dialog.dismiss();
-                                }
-                            });
+
+                    // If review list is not empty, start reviewing
+                    int reviewCount = VocabularyContentProvider.getVocabularyNumForToday(MainActivity.this, VocabularyContract.VocabularyEntry.STATUS_REVIEWING);
+                    dialogBuilder = new AlertDialog.Builder(MainActivity.this);
+                    if (reviewCount > 0) {
+                        dialogBuilder.setMessage("complete_learning_list_and_start_reviewing")
+                                .setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        // Load reviewing list
+                                        getSupportLoaderManager().initLoader(LOADER_REVIEW_LIST_ID, null, MainActivity.this);
+                                    }
+                                })
+                                .setNegativeButton(getString(R.string.cancel), new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        dialog.dismiss();
+                                    }
+                                });
+
+                    } else {
+                        dialogBuilder.setMessage(R.string.complete_learning_list)
+                                .setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        dialog.dismiss();
+                                    }
+                                });
+                    }
+
                     dialogBuilder.show();
                     isDialogDisplay = true;
 
                 } else {
                     // Set status to STATUS_LEARNED which will be scheduled in review list days later
-                    updateStatus(VocabularyContract.VocabularyEntry.STATUS_LEARNED,mClientVocabulary.getId());
+                    updateStatus(VocabularyContract.VocabularyEntry.STATUS_LEARNED, mClientVocabulary.getId());
                     displayNextVocabulary();
                 }
             }
@@ -171,12 +200,28 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @NonNull
     @Override
     public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
-        return new CursorLoader(this,
-                VocabularyContract.VocabularyEntry.CONTENT_URI,
-                null,
-                VocabularyContract.VocabularyEntry.COLUMN_STATUS + "=" + VocabularyContract.VocabularyEntry.STATUS_LEARNING,
-                null,
-                null);
+        switch (id) {
+            case LOADER_LEARN_LIST_ID:
+                return new CursorLoader(this,
+                        VocabularyContract.VocabularyEntry.CONTENT_URI,
+                        null,
+                        VocabularyContract.VocabularyEntry.COLUMN_STATUS + "=" + VocabularyContract.VocabularyEntry.STATUS_LEARNING,
+                        null,
+                        null);
+
+            case LOADER_REVIEW_LIST_ID:
+                return new CursorLoader(this,
+                        VocabularyContract.VocabularyEntry.CONTENT_URI,
+                        null,
+                        VocabularyContract.VocabularyEntry.COLUMN_STATUS + "=" + VocabularyContract.VocabularyEntry.STATUS_REVIEWING,
+                        null,
+                        null);
+
+            default:
+                throw new IllegalArgumentException("The loader id is invalid.");
+
+        }
+
     }
 
     @Override

@@ -12,16 +12,15 @@ import java.util.concurrent.TimeUnit;
 
 public class JobScheduler {
 
-    // change to 24*60 interval minutes in release
-    private static final int REMINDER_INTERVAL_MINUTES = 2;
-    private static final int REMINDER_INTERVAL_SECONDS = (int) (TimeUnit.MINUTES.toSeconds(REMINDER_INTERVAL_MINUTES));
-    private static final int SYNC_FLEXTIME_SECONDS = REMINDER_INTERVAL_SECONDS;
-
     private static boolean sInitialized;
 
-    public static void scheduleLearnListGen(Context context) {
+    public static void scheduleJobs(Context context) {
 
         if (sInitialized) return;
+
+        int intervalMin = context.getResources().getInteger(R.integer.job_interval_min);
+        int intervalSec = (int) (TimeUnit.MINUTES.toSeconds(intervalMin));
+        int syncFlexTimeSec = intervalSec;
 
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(context));
         Job myJob = dispatcher.newJobBuilder()
@@ -30,8 +29,8 @@ public class JobScheduler {
                 .setRecurring(true)
                 .setLifetime(Lifetime.FOREVER)
                 .setTrigger(Trigger.executionWindow(
-                        REMINDER_INTERVAL_SECONDS,
-                        REMINDER_INTERVAL_SECONDS + SYNC_FLEXTIME_SECONDS))
+                        intervalSec,
+                        intervalSec + syncFlexTimeSec))
                 .build();
 
         dispatcher.mustSchedule(myJob);

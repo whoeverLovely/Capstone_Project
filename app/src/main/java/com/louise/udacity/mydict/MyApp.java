@@ -13,6 +13,6 @@ public class MyApp extends Application {
 
         Timber.plant(new Timber.DebugTree());
 
-        JobScheduler.scheduleLearnListGen(this);
+        JobScheduler.scheduleJobs(this);
     }
 }

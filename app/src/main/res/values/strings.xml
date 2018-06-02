@@ -14,6 +14,7 @@
     <string name="group">Group</string>
     <string name="link">Link</string>
     <string name="complete_learning_list">Congratulations! You\'ve completed all vocabularies learning for today!</string>
+    <string name="complete_learning_list_and_start_reviewing">You\'ve completed all vocabularies learning for today! Do you want to start reviewing?</string>
     <string name="ok">OK</string>
     <string name="daily_vocabulary_number">Daily Vocabulary Number</string>
     <string name="set_vocabulary_number">Set the number of vocabularies to learn for each day:</string>
@@ -22,5 +23,6 @@
     <string name="pref_list_tag_key">pref_list_tag</string>
     <string name="pref_daily_count_key">pref_daily_count</string>
     <string name="list_is_empty">Learning list is empty, please download new list!</string>
+    <string name="cancel">Cancel</string>
 
 </resources>

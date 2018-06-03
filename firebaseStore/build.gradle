@@ -1,0 +1,11 @@
+apply plugin: 'java-library'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation 'com.google.firebase:firebase-admin:6.2.0'
+    implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.23.1'
+}
+
+sourceCompatibility = "1.7"
+targetCompatibility = "1.7"

@@ -9,4 +9,6 @@
 /captures
 .externalNativeBuild
 /ECDICT-master
-my_dict.db 
+my_dict.db
+/dataPrep/src/main/java/com/louise/udacity/lib/Key.java
+mydict-96553-firebase-adminsdk-sipkz-8eb0ad9011.json

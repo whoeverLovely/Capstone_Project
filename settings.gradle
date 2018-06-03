@@ -1,1 +1,1 @@
-include ':app', ':dataPrep'
+include ':app', ':dataPrep', ':firebaseStore'

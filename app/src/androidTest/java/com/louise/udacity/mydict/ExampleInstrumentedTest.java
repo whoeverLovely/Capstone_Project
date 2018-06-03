@@ -1,11 +1,8 @@
 package com.louise.udacity.mydict;
 
 import android.content.Context;
-import android.content.Intent;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-
-import com.louise.udacity.lib.VocabularyProtos;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

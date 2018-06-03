@@ -6,6 +6,7 @@ dependencies {
     implementation 'com.google.protobuf:protobuf-lite:3.0.0'
     // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
     implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.23.1'
+
 }
 
 sourceCompatibility = "1.7"

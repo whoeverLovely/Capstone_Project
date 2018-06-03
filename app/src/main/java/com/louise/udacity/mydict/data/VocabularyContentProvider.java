@@ -12,17 +12,7 @@ import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import com.louise.udacity.lib.VocabularyProtos;
-
-import org.joda.time.Days;
 import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
-
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-
-import timber.log.Timber;
 
 
 public class VocabularyContentProvider extends ContentProvider {

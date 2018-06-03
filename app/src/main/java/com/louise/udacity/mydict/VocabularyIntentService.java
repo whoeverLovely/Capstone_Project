@@ -5,6 +5,7 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -153,10 +154,21 @@ public class VocabularyIntentService extends IntentService {
                         + VocabularyContract.VocabularyEntry.COLUMN_DATE + "<=?",
                 new String[]{String.valueOf(VocabularyContract.VocabularyEntry.STATUS_LEARNED), targetDateStr});
 
-        if (reviewVocabAdded > 0)
+        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(this).edit();
+        if (reviewVocabAdded > 0) {
+            editor.putString(getString(R.string.pref_review_list_status), Constants.LIST_STATUS_READY);
             Timber.d("------------------------" + reviewVocabAdded + " vocabularies added to review list----------------------");
-        else
+        } else {
             Timber.d("No new vocabularies added to reviewing list!");
+
+            int reviewNumTotal = VocabularyContentProvider.getVocabularyNumForToday(this, VocabularyContract.VocabularyEntry.STATUS_REVIEWING);
+            if (reviewNumTotal > 0)
+                editor.putString(getString(R.string.pref_review_list_status), Constants.LIST_STATUS_READY);
+            else
+                editor.putString(getString(R.string.pref_review_list_status), Constants.LIST_STATUS_EMPTY);
+        }
+
+        editor.apply();
     }
 
     private void handleActionUpdateStatus(int status, long vocabId) {
@@ -245,7 +257,7 @@ public class VocabularyIntentService extends IntentService {
         }
     }
 
-    // Update COLUMN_DATE to current date
+    // Update COLUMN_DATE to current date, status to status_learning
     private void handleActionGenLearnList(String tag, int number) {
         LocalDate localDate = LocalDate.now();
         String curentDate = localDate.toString();
@@ -279,11 +291,20 @@ public class VocabularyIntentService extends IntentService {
                         sqlWhere,
                         null);
 
+        // Update SharedPreference to initialize MainActivity when it's launched
+        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(this).edit();
+        if (itemUpdated > 0) {
+            editor.putString(getString(R.string.pref_learn_list_status), Constants.LIST_STATUS_READY);
+        } else {
+            int learnNumTotal = VocabularyContentProvider.getVocabularyNumForToday(this, VocabularyContract.VocabularyEntry.STATUS_LEARNING);
+            if (learnNumTotal > 0)
+                editor.putString(getString(R.string.pref_learn_list_status), Constants.LIST_STATUS_READY);
+            else
+                editor.putString(getString(R.string.pref_learn_list_status), Constants.LIST_STATUS_EMPTY);
+        }
+        editor.apply();
+
         Timber.d("Selected vocabularies : " + itemUpdated);
-    }
-
-    private void handleActionConvertReview() {
-
     }
 
     private void importToDB(InputStream inputStream, String tag) {

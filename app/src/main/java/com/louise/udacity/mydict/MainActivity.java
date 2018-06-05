@@ -13,6 +13,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -25,7 +26,6 @@ import android.widget.TextView;
 
 import com.louise.udacity.mydict.data.ClientVocabulary;
 import com.louise.udacity.mydict.data.Constants;
-import com.louise.udacity.mydict.data.VocabularyContentProvider;
 import com.louise.udacity.mydict.data.VocabularyContract;
 
 import java.util.LinkedList;
@@ -163,6 +163,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             case R.id.vocabulary_settings:
                 Intent intent = new Intent(this, VocabularySettingActivity.class);
                 startActivity(intent);
+                return true;
+
+            case R.id.search:
+                onSearchRequested();
+                Intent searchIntent = new Intent(SearchResultActivity.ACTION_SEARCH);
+                searchIntent.putExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_ID, mClientVocabulary.getId());
+
+                String groupName = mClientVocabulary.getGroupName();
+                if (groupName == null || "".equals(groupName))
+                    groupName = mClientVocabulary.getWord();
+
+                searchIntent.putExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_GROUP, groupName);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(searchIntent);
         }
         return super.onOptionsItemSelected(item);
     }
@@ -252,6 +265,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         clientVocabulary.setWord(cursor.getString(cursor.getColumnIndex(VocabularyContract.VocabularyEntry.COLUMN_WORD)));
         clientVocabulary.setPhonetic(cursor.getString((cursor.getColumnIndex(VocabularyContract.VocabularyEntry.COLUMN_PHONETIC))));
         clientVocabulary.setTranslation(cursor.getString(cursor.getColumnIndex(VocabularyContract.VocabularyEntry.COLUMN_TRANSLATION)));
+        clientVocabulary.setGroupName(cursor.getString(cursor.getColumnIndex(VocabularyContract.VocabularyEntry.COLUMN_GROUP_NAME)));
         return clientVocabulary;
     }
 

@@ -4,10 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".SearchResultActivity">
+
 
     <TextView
-        android:id="@+id/textView_word"
+        android:id="@+id/textView_word_result"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
@@ -16,24 +17,24 @@
         android:layout_marginStart="24dp"
         android:layout_marginTop="32dp"
         android:textSize="@dimen/main_word_text_size"
+        tools:text="Hello"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:text="Hello" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/textView_phonetic"
+        android:id="@+id/textView_phonetic_result"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
         android:textSize="@dimen/main_phonetic_text_size"
-        app:layout_constraintEnd_toEndOf="@+id/textView_word"
-        app:layout_constraintStart_toStartOf="@+id/textView_word"
-        app:layout_constraintTop_toBottomOf="@+id/textView_word"
-        tools:text="[helˈō]" />
+        android:layout_marginTop="24dp"
+        tools:text="[helˈō]"
+        app:layout_constraintEnd_toEndOf="@+id/textView_word_result"
+        app:layout_constraintStart_toStartOf="@+id/textView_word_result"
+        app:layout_constraintTop_toBottomOf="@+id/textView_word_result" />
 
     <TextView
-        android:id="@+id/textView_translation"
+        android:id="@+id/textView_translation_result"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
@@ -43,31 +44,22 @@
         android:layout_marginTop="24dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView_phonetic"
+        app:layout_constraintTop_toBottomOf="@+id/textView_phonetic_result"
         tools:text="
 int. 喂；哈罗
 n. 表示问候， 惊奇或唤起注意时的用语
-n. (Hello)人名；(法)埃洛" />
+n. (Hello)人名；(法)埃洛"/>
 
     <Button
-        android:id="@+id/button_archive"
+        android:id="@+id/button_link"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="32dp"
-        android:layout_marginLeft="32dp"
-        android:layout_marginStart="32dp"
-        android:text="@string/main_button_text_archive"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/button_Next"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:layout_marginEnd="32dp"
         android:layout_marginRight="32dp"
-        android:text="@string/main_button_text_next"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/button_archive" />
+        android:text="@string/link"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
 
 </android.support.constraint.ConstraintLayout>

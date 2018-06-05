@@ -25,6 +25,6 @@ public class ExampleInstrumentedTest {
 
     @Test
     public void vocabularyListDownloadTest() {
-        VocabularyIntentService.startActionDownloadVocabulary(appContext, "gre_list");
+        VocabularyIntentService.startActionSearch(appContext, "hello");
     }
 }

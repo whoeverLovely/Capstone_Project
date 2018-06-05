@@ -40,12 +40,12 @@ public class VocabularyContract {
         public static final String COLUMN_TRANSLATION = "translation";
         public static final String COLUMN_TAG = "tag";
         public static final String COLUMN_STATUS = "status";
-        public static final String COLUMN_GROUP_ID = "groupId";
+        public static final String COLUMN_GROUP_NAME = "groupId";
         public static final String COLUMN_DATE = "date";
 
     }
 
-    public static final class GroupEntry implements BaseColumns {
+    /*public static final class GroupEntry implements BaseColumns {
 
         public static final Uri CONTENT_URI =
                 BASE_CONTENT_URI.buildUpon().appendPath(PATH_GROUP).build();
@@ -54,5 +54,5 @@ public class VocabularyContract {
         // Define the first vocabulary as the key and mark all vocabularies which linked to it with the same group id
         public static final String COLUMN_key = "key";
 
-    }
+    }*/
 }

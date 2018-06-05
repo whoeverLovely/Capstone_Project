@@ -6,19 +6,29 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.louise.udacity.lib.VocabularyProtos;
 import com.louise.udacity.lib.VocabularyReader;
+import com.louise.udacity.mydict.data.ClientVocabulary;
 import com.louise.udacity.mydict.data.Constants;
 import com.louise.udacity.mydict.data.VocabularyContentProvider;
 import com.louise.udacity.mydict.data.VocabularyContract;
@@ -46,13 +56,15 @@ public class VocabularyIntentService extends IntentService {
     public static final String ACTION_GENERATE_LEARN_LIST = "com.louise.udacity.mydict.action.list";
     public static final String ACTION_UPDATE_STATUS = "com.louise.udacity.mydict.action.update-status";
     public static final String ACTION_UPDATE_REVIEW_LIST = "com.louise.udacity.mydict.action.update-review-list";
+    public static final String ACTION_LINK = "com.louise.udacity.mydict.action.link";
+
 
     private static final String EXTRA_TAG = "com.louise.udacity.mydict.extra.tag";
     public static final String EXTRA_STATUS_TYPE = "com.louise.udacity.mydict.extra.status-type";
     public static final String EXTRA_STATUS = "com.louise.udacity.mydict.extra.delete-status";
-    public static final String EXTRA_LIST_TYPE = "com.louise.udacity.mydict.action.list-type";
-    public static final String EXTRA_VOCABULARY_ID = "com.louise.udacity.mydict.action.vocab-id";
-    public static final String EXTRA_IDLIST = "com.louise.udacity.mydict.action.id-list";
+    public static final String EXTRA_VOCABULARY_ID = "com.louise.udacity.mydict.extra.vocab-id";
+    public static final String EXTRA_VOCABULARY = "com.louise.udacity.mydict.extra.vocabulary";
+    public static final String EXTRA_QUERY = "com.louise.udacity.mydict.extra.query";
 
     final Intent notifyIntent = new Intent(ACTION_STATUS);
 
@@ -101,6 +113,22 @@ public class VocabularyIntentService extends IntentService {
         context.startService(intent);
     }
 
+    public static void startActionSearch(Context context, String query) {
+        Intent intent = new Intent(context, VocabularyIntentService.class);
+        intent.setAction(SearchResultActivity.ACTION_SEARCH);
+        intent.putExtra(EXTRA_QUERY, query);
+        context.startService(intent);
+    }
+
+    public static void startActionLink(Context context, long originalId, @NonNull String originalGroup, ClientVocabulary currentVocabulary) {
+        Intent intent = new Intent(context, VocabularyIntentService.class);
+        intent.setAction(ACTION_LINK);
+        intent.putExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_ID, originalId);
+        intent.putExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_GROUP, originalGroup);
+        intent.putExtra(EXTRA_VOCABULARY, currentVocabulary);
+        context.startService(intent);
+    }
+
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
@@ -135,11 +163,132 @@ public class VocabularyIntentService extends IntentService {
                         handleActionUpdateReviewList();
                         break;
 
+                    case SearchResultActivity.ACTION_SEARCH:
+                        String query = intent.getStringExtra(EXTRA_QUERY);
+                        handleActionSearch(query);
+                        break;
+
+                    case ACTION_LINK:
+                        long originalId = intent.getLongExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_ID, -1);
+                        String originalGroup = intent.getStringExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_GROUP);
+                        ClientVocabulary clientVocabulary = intent.getParcelableExtra(EXTRA_VOCABULARY);
+                        handleActionLink(originalId, originalGroup, clientVocabulary);
+                        break;
+
                     default:
-                        throw new RuntimeException("The action requested is invalid!");
+                        throw new RuntimeException("The action requested:" + action + "is invalid!");
                 }
             }
         }
+    }
+
+    private void handleActionLink(long originalId, String originalGroup, ClientVocabulary currentVocabulary) {
+
+        Intent intent = new Intent(SearchResultActivity.ACTION_SEARCH);
+        intent.putExtra(EXTRA_STATUS_TYPE, Constants.STATUS_TYPE_LINK);
+
+        // Check if current vocabulary exists in db
+        Cursor cursor = getContentResolver().query(VocabularyContentProvider.buildVocabularyUriWithWord(currentVocabulary.getWord()),
+                new String[]{VocabularyContract.VocabularyEntry._ID, VocabularyContract.VocabularyEntry.COLUMN_GROUP_NAME},
+                null,
+                null,
+                null);
+
+
+        ContentValues cvUpdate = new ContentValues();
+        cvUpdate.put(VocabularyContract.VocabularyEntry.COLUMN_GROUP_NAME, originalGroup);
+
+        // Update original vocabulary
+        int numUpdatedExisting = getContentResolver().update(VocabularyContract.VocabularyEntry.CONTENT_URI,
+                cvUpdate,
+                VocabularyContract.VocabularyEntry._ID + "=?",
+                new String[]{String.valueOf(originalId)});
+        int numUpdatedCurrent = 0;
+
+        // Current vocabulary doesn't exist in db
+        if (cursor.getCount() < 1) {
+            // Insert currentVocabulary to db
+            ContentValues cvInsert = new ContentValues();
+            cvInsert.put(VocabularyContract.VocabularyEntry.COLUMN_WORD, currentVocabulary.getWord());
+            cvInsert.put(VocabularyContract.VocabularyEntry.COLUMN_PHONETIC, currentVocabulary.getPhonetic());
+            cvInsert.put(VocabularyContract.VocabularyEntry.COLUMN_TRANSLATION, currentVocabulary.getTranslation());
+            cvInsert.put(VocabularyContract.VocabularyEntry.COLUMN_DEFINITION, currentVocabulary.getDefinition());
+            cvInsert.put(VocabularyContract.VocabularyEntry.COLUMN_GROUP_NAME, originalGroup);
+            cvInsert.put(VocabularyContract.VocabularyEntry.COLUMN_TAG, Constants.TAG_LINK);
+            getContentResolver().insert(VocabularyContract.VocabularyEntry.CONTENT_URI,
+                    cvInsert);
+
+            numUpdatedCurrent = 1;
+        }
+        // Current vocabulary does exist in db
+        else {
+            cursor.moveToFirst();
+            long existingId = cursor.getLong(1);
+            String existingGroup = cursor.getString(2);
+
+            if (existingGroup != null || existingGroup != "") {
+                numUpdatedCurrent = getContentResolver().update(VocabularyContract.VocabularyEntry.CONTENT_URI,
+                        cvUpdate,
+                        VocabularyContract.VocabularyEntry.COLUMN_GROUP_NAME + "=?",
+                        new String[]{existingGroup});
+            } else {
+                numUpdatedCurrent = getContentResolver().update(ContentUris.withAppendedId(VocabularyContract.VocabularyEntry.CONTENT_URI, existingId),
+                        cvUpdate,
+                        null,
+                        null);
+            }
+
+        }
+
+        int updatedTotal = numUpdatedExisting + numUpdatedCurrent;
+
+        if (updatedTotal > 0)
+            intent.putExtra(EXTRA_STATUS, Constants.STATUS_SUCCEEDED);
+        else
+            intent.putExtra(EXTRA_STATUS, Constants.STATUS_FAILED);
+
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+
+        Timber.d(updatedTotal + " vocabularies updated group to " + originalGroup);
+    }
+
+    private void handleActionSearch(final String query) {
+        Timber.d("Stating search");
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        DocumentReference docRef = db.collection("vocabulary").document(query);
+
+        final Intent intent = new Intent(SearchResultActivity.ACTION_SEARCH);
+        intent.putExtra(EXTRA_STATUS_TYPE, Constants.STATUS_TYPE_QUERY);
+
+
+        docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot document = task.getResult();
+                    intent.putExtra(EXTRA_STATUS, Constants.STATUS_SUCCEEDED);
+                    if (document.exists()) {
+                        String phonetic = (String) document.get("phonetic");
+                        String translation = (String) document.get("translation");
+                        String definition = (String) document.get("definition");
+                        ClientVocabulary clientVocabulary = new ClientVocabulary();
+                        clientVocabulary.setWord(query);
+                        clientVocabulary.setPhonetic(phonetic);
+                        clientVocabulary.setTranslation(translation);
+                        clientVocabulary.setDefinition(definition);
+                        intent.putExtra(EXTRA_VOCABULARY, clientVocabulary);
+                        Timber.d("DocumentSnapshot data: " + document.getData());
+                    } else {
+                        intent.putExtra(EXTRA_VOCABULARY, "Not exists");
+                        Timber.d("No such document");
+                    }
+                } else {
+                    intent.putExtra(EXTRA_STATUS, Constants.STATUS_FAILED);
+                    Timber.d("get failed with " + task.getException());
+                }
+                LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(intent);
+            }
+        });
     }
 
     private void handleActionUpdateReviewList() {

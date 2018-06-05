@@ -12,7 +12,7 @@ public class ClientVocabulary implements Parcelable {
     private String translation;
     private String tag;
     private int status;
-    private int groupId;
+    private String groupName;
 
     public void setWord(String word) {
         this.word = word;
@@ -38,8 +38,8 @@ public class ClientVocabulary implements Parcelable {
         this.status = status;
     }
 
-    public void setGroupId(int groupId) {
-        this.groupId = groupId;
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
     }
 
     public void setId(long id) {
@@ -75,8 +75,8 @@ public class ClientVocabulary implements Parcelable {
         return status;
     }
 
-    public int getGroupId() {
-        return groupId;
+    public String getGroupName() {
+        return groupName;
     }
 
     @Override
@@ -92,7 +92,7 @@ public class ClientVocabulary implements Parcelable {
         dest.writeString(this.translation);
         dest.writeString(this.tag);
         dest.writeInt(this.status);
-        dest.writeInt(this.groupId);
+        dest.writeString(this.groupName);
     }
 
     public ClientVocabulary() {
@@ -105,7 +105,7 @@ public class ClientVocabulary implements Parcelable {
         this.translation = in.readString();
         this.tag = in.readString();
         this.status = in.readInt();
-        this.groupId = in.readInt();
+        this.groupName = in.readString();
     }
 
     public static final Parcelable.Creator<ClientVocabulary> CREATOR = new Parcelable.Creator<ClientVocabulary>() {

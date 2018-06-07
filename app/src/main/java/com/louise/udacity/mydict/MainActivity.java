@@ -63,6 +63,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private static String LIST_REVIEW = "review";
     private static List<ClientVocabulary> clientVocabularyList;
     private static boolean flag;
+    private static Menu mMenu;
+    public static final String EXTRA_GROUP = "com.louise.udacity.mydict.mainActivity.extra.group";
 
     private static final String STATE_KEY_DISPLAY_DIALOG = "isDialogDisplay";
 
@@ -152,6 +154,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu_main, menu);
+        mMenu = menu;
         return true;
     }
 
@@ -167,15 +170,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             case R.id.search:
                 onSearchRequested();
-                Intent searchIntent = new Intent(SearchResultActivity.ACTION_SEARCH);
-                searchIntent.putExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_ID, mClientVocabulary.getId());
+                return true;
 
-                String groupName = mClientVocabulary.getGroupName();
-                if (groupName == null || "".equals(groupName))
-                    groupName = mClientVocabulary.getWord();
-
-                searchIntent.putExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_GROUP, groupName);
-                LocalBroadcastManager.getInstance(this).sendBroadcast(searchIntent);
+            case R.id.view_group:
+                Intent groupIntent = new Intent(this, GroupActivity.class);
+                groupIntent.putExtra(EXTRA_GROUP, mClientVocabulary.getGroupName());
+                startActivity(groupIntent);
         }
         return super.onOptionsItemSelected(item);
     }
@@ -184,6 +184,21 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onSaveInstanceState(Bundle outState) {
         outState.putBoolean(STATE_KEY_DISPLAY_DIALOG, isDialogDisplay);
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void startActivity(Intent intent) {
+        if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
+            intent.putExtra(VocabularyIntentService.EXTRA_ORIGINAL_VOCABULARY_ID, mClientVocabulary.getId());
+
+            String groupName = mClientVocabulary.getGroupName();
+            if (groupName == null || "".equals(groupName))
+                groupName = mClientVocabulary.getWord();
+
+            intent.putExtra(VocabularyIntentService.EXTRA_ORIGINAL_VOCABULARY_GROUP, groupName);
+        }
+
+        super.startActivity(intent);
     }
 
     private void setVocab() {
@@ -236,16 +251,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
         if (flag) {
 
-            clientVocabularyList = new LinkedList<>();
-            ClientVocabulary cv;
-            while (data.moveToNext()) {
-                cv = cursorConvertToClientVocabulary(data);
-                clientVocabularyList.add(cv);
+            if (clientVocabularyList == null) {
+                clientVocabularyList = new LinkedList<>();
+                ClientVocabulary cv;
+                while (data.moveToNext()) {
+                    cv = cursorConvertToClientVocabulary(data);
+                    clientVocabularyList.add(cv);
+                }
             }
 
             Timber.d("The number of entries loaded: %s", data.getCount());
+            Timber.d("current item index: " + currentItemIndex);
 
             if (data.getCount() > 0) {
+                Timber.d("clientVocabularyList size is " + clientVocabularyList.size());
                 mClientVocabulary = clientVocabularyList.get(currentItemIndex);
                 setVocab();
                 currentItemIndex++;

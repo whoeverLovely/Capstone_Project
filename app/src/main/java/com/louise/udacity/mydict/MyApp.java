@@ -1,10 +1,11 @@
 package com.louise.udacity.mydict;
 
 import android.app.Application;
+import android.support.multidex.MultiDexApplication;
 
 import timber.log.Timber;
 
-public class MyApp extends Application {
+public class MyApp extends MultiDexApplication{
 
 
     @Override

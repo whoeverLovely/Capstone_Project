@@ -9,11 +9,17 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        shrunk {
+            minifyEnabled true
+            shrinkResources true
         }
     }
 }
@@ -43,6 +49,8 @@ dependencies {
     implementation 'joda-time:joda-time:2.10'
     implementation "com.android.support:design:27.1.1"
     implementation 'com.google.firebase:firebase-firestore:17.0.1'
+
+    implementation 'com.android.support:multidex:1.0.3'
 }
 
 apply plugin: 'com.google.gms.google-services'

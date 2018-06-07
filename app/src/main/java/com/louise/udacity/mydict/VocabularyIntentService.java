@@ -1,10 +1,12 @@
 package com.louise.udacity.mydict;
 
 import android.app.IntentService;
+import android.content.BroadcastReceiver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
@@ -57,6 +59,7 @@ public class VocabularyIntentService extends IntentService {
     public static final String ACTION_UPDATE_STATUS = "com.louise.udacity.mydict.action.update-status";
     public static final String ACTION_UPDATE_REVIEW_LIST = "com.louise.udacity.mydict.action.update-review-list";
     public static final String ACTION_LINK = "com.louise.udacity.mydict.action.link";
+    public static final String ACTION_SEARCH = "com.louise.udacity.mydict.action.search";
 
 
     private static final String EXTRA_TAG = "com.louise.udacity.mydict.extra.tag";
@@ -65,6 +68,9 @@ public class VocabularyIntentService extends IntentService {
     public static final String EXTRA_VOCABULARY_ID = "com.louise.udacity.mydict.extra.vocab-id";
     public static final String EXTRA_VOCABULARY = "com.louise.udacity.mydict.extra.vocabulary";
     public static final String EXTRA_QUERY = "com.louise.udacity.mydict.extra.query";
+    public static final String EXTRA_GROUP = "com.louise.udacity.mydict.extra.group";
+    public static final String EXTRA_ORIGINAL_VOCABULARY_ID = "com.louise.udacity.mydict.extra.original-vocabulary-id";
+    public static final String EXTRA_ORIGINAL_VOCABULARY_GROUP = "com.louise.udacity.mydict.extra.original-vocabulary-group";
 
     final Intent notifyIntent = new Intent(ACTION_STATUS);
 
@@ -115,17 +121,17 @@ public class VocabularyIntentService extends IntentService {
 
     public static void startActionSearch(Context context, String query) {
         Intent intent = new Intent(context, VocabularyIntentService.class);
-        intent.setAction(SearchResultActivity.ACTION_SEARCH);
+        intent.setAction(ACTION_SEARCH);
         intent.putExtra(EXTRA_QUERY, query);
         context.startService(intent);
     }
 
-    public static void startActionLink(Context context, long originalId, @NonNull String originalGroup, ClientVocabulary currentVocabulary) {
+    public static void startActionLink(Context context, ClientVocabulary currentVocabulary, long originalVocabularyId, String originalGroup) {
         Intent intent = new Intent(context, VocabularyIntentService.class);
         intent.setAction(ACTION_LINK);
-        intent.putExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_ID, originalId);
-        intent.putExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_GROUP, originalGroup);
         intent.putExtra(EXTRA_VOCABULARY, currentVocabulary);
+        intent.putExtra(EXTRA_VOCABULARY_ID, originalVocabularyId);
+        intent.putExtra(EXTRA_GROUP, originalGroup);
         context.startService(intent);
     }
 
@@ -163,16 +169,16 @@ public class VocabularyIntentService extends IntentService {
                         handleActionUpdateReviewList();
                         break;
 
-                    case SearchResultActivity.ACTION_SEARCH:
+                    case ACTION_SEARCH:
                         String query = intent.getStringExtra(EXTRA_QUERY);
                         handleActionSearch(query);
                         break;
 
                     case ACTION_LINK:
-                        long originalId = intent.getLongExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_ID, -1);
-                        String originalGroup = intent.getStringExtra(SearchResultActivity.EXTRA_ORIGINAL_VOCABULARY_GROUP);
                         ClientVocabulary clientVocabulary = intent.getParcelableExtra(EXTRA_VOCABULARY);
-                        handleActionLink(originalId, originalGroup, clientVocabulary);
+                        long originalId = intent.getLongExtra(EXTRA_VOCABULARY_ID, -1);
+                        String originalGroup = intent.getStringExtra(EXTRA_GROUP);
+                        handleActionLink(clientVocabulary, originalId, originalGroup);
                         break;
 
                     default:
@@ -182,10 +188,9 @@ public class VocabularyIntentService extends IntentService {
         }
     }
 
-    private void handleActionLink(long originalId, String originalGroup, ClientVocabulary currentVocabulary) {
+    private void handleActionLink(ClientVocabulary currentVocabulary, long originalId, String originalGroup) {
 
-        Intent intent = new Intent(SearchResultActivity.ACTION_SEARCH);
-        intent.putExtra(EXTRA_STATUS_TYPE, Constants.STATUS_TYPE_LINK);
+        Timber.d("group name received in intentservice is " + originalGroup);
 
         // Check if current vocabulary exists in db
         Cursor cursor = getContentResolver().query(VocabularyContentProvider.buildVocabularyUriWithWord(currentVocabulary.getWord()),
@@ -193,7 +198,6 @@ public class VocabularyIntentService extends IntentService {
                 null,
                 null,
                 null);
-
 
         ContentValues cvUpdate = new ContentValues();
         cvUpdate.put(VocabularyContract.VocabularyEntry.COLUMN_GROUP_NAME, originalGroup);
@@ -223,8 +227,8 @@ public class VocabularyIntentService extends IntentService {
         // Current vocabulary does exist in db
         else {
             cursor.moveToFirst();
-            long existingId = cursor.getLong(1);
-            String existingGroup = cursor.getString(2);
+            long existingId = cursor.getLong(0);
+            String existingGroup = cursor.getString(1);
 
             if (existingGroup != null || existingGroup != "") {
                 numUpdatedCurrent = getContentResolver().update(VocabularyContract.VocabularyEntry.CONTENT_URI,
@@ -237,11 +241,11 @@ public class VocabularyIntentService extends IntentService {
                         null,
                         null);
             }
-
         }
 
         int updatedTotal = numUpdatedExisting + numUpdatedCurrent;
 
+        Intent intent = new Intent(ACTION_LINK);
         if (updatedTotal > 0)
             intent.putExtra(EXTRA_STATUS, Constants.STATUS_SUCCEEDED);
         else
@@ -257,9 +261,7 @@ public class VocabularyIntentService extends IntentService {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         DocumentReference docRef = db.collection("vocabulary").document(query);
 
-        final Intent intent = new Intent(SearchResultActivity.ACTION_SEARCH);
-        intent.putExtra(EXTRA_STATUS_TYPE, Constants.STATUS_TYPE_QUERY);
-
+        final Intent intent = new Intent(ACTION_SEARCH);
 
         docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
@@ -279,7 +281,7 @@ public class VocabularyIntentService extends IntentService {
                         intent.putExtra(EXTRA_VOCABULARY, clientVocabulary);
                         Timber.d("DocumentSnapshot data: " + document.getData());
                     } else {
-                        intent.putExtra(EXTRA_VOCABULARY, "Not exists");
+                        intent.putExtra(EXTRA_VOCABULARY, Constants.STATUS_FAILED);
                         Timber.d("No such document");
                     }
                 } else {

@@ -26,6 +26,7 @@ import android.widget.TextView;
 
 import com.louise.udacity.mydict.data.ClientVocabulary;
 import com.louise.udacity.mydict.data.Constants;
+import com.louise.udacity.mydict.data.VocabularyContentProvider;
 import com.louise.udacity.mydict.data.VocabularyContract;
 
 import java.util.LinkedList;
@@ -173,9 +174,21 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 return true;
 
             case R.id.view_group:
-                Intent groupIntent = new Intent(this, GroupActivity.class);
-                groupIntent.putExtra(EXTRA_GROUP, mClientVocabulary.getGroupName());
-                startActivity(groupIntent);
+                // If the group is empty, display a snackbar
+                Cursor cursor = getContentResolver().query(VocabularyContentProvider.buildVocabularyUriWithWord(mClientVocabulary.getWord()),
+                        new String[]{VocabularyContract.VocabularyEntry.COLUMN_GROUP_NAME},
+                        null,
+                        null,
+                        null);
+                cursor.moveToFirst();
+                String group = cursor.getString(0);
+                if ("".equals(group) || group == null)
+                    Snackbar.make(textViewWord, R.string.no_group, Snackbar.LENGTH_LONG).show();
+                else {
+                    Intent groupIntent = new Intent(this, GroupActivity.class);
+                    groupIntent.putExtra(EXTRA_GROUP, mClientVocabulary.getGroupName());
+                    startActivity(groupIntent);
+                }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -209,6 +222,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             buttonArchive.setClickable(true);
             buttonArchive.setTextColor(buttonArchive.getTextColors().getDefaultColor());
+            Timber.d("default button color in main activity: " + buttonArchive.getTextColors().getDefaultColor());
         }
     }
 

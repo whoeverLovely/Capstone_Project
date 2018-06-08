@@ -44,7 +44,7 @@ public class SearchResultActivity extends AppCompatActivity {
         setContentView(R.layout.activity_search_result);
         ButterKnife.bind(this);
 
-        buttonLink.setClickable(false);
+
         // Get the intent, verify the action and get the query
 
         Intent intent = getIntent();
@@ -69,6 +69,7 @@ public class SearchResultActivity extends AppCompatActivity {
                 VocabularyIntentService.startActionLink(SearchResultActivity.this, mClientVocabulary, originalVocabularyId, originalGroup);
             }
         });
+        buttonLink.setClickable(false);
     }
 
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
@@ -88,7 +89,7 @@ public class SearchResultActivity extends AppCompatActivity {
                     if (Constants.STATUS_SUCCEEDED.equals(searchStatus) && clientVocabulary != null) {
                         mClientVocabulary = clientVocabulary;
                         displayVocabulary();
-                        buttonLink.setClickable(true);
+
                     } else {
                         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(SearchResultActivity.this);
                         dialogBuilder.setMessage("Sorry that we can't find the vocabulary!")
@@ -111,9 +112,14 @@ public class SearchResultActivity extends AppCompatActivity {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         dialog.dismiss();
+                                        // Go back to MainActivity
+
                                     }
-                                })
-                                .show();
+                                });
+
+                        if (!(SearchResultActivity.this).isFinishing()) {
+                            dialogBuilder.show();
+                        }
                     }
             }
         }
@@ -124,5 +130,7 @@ public class SearchResultActivity extends AppCompatActivity {
         textViewPhonetic.setText("[" + mClientVocabulary.getPhonetic() + "]");
         textViewTranslation.setText(mClientVocabulary.getTranslation());
 
+        buttonLink.setClickable(true);
+        buttonLink.setTextColor(getResources().getColor(R.color.colorPrimary));
     }
 }

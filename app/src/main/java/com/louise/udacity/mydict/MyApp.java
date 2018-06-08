@@ -1,7 +1,8 @@
 package com.louise.udacity.mydict;
 
-import android.app.Application;
 import android.support.multidex.MultiDexApplication;
+
+import com.louise.udacity.mydict.service.JobScheduler;
 
 import timber.log.Timber;
 

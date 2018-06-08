@@ -14,10 +14,12 @@ import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.louise.udacity.mydict.data.ClientVocabulary;
 import com.louise.udacity.mydict.data.Constants;
+import com.louise.udacity.mydict.service.VocabularyIntentService;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -39,6 +41,9 @@ public class SearchResultActivity extends AppCompatActivity {
     @BindView(R.id.button_link)
     Button buttonLink;
 
+    @BindView(R.id.progressbar_search)
+    ProgressBar progressBar;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +51,7 @@ public class SearchResultActivity extends AppCompatActivity {
         setContentView(R.layout.activity_search_result);
         ButterKnife.bind(this);
 
-
+        progressBar.setVisibility(View.VISIBLE);
         // Get the intent, verify the action and get the query
 
         Intent intent = getIntent();
@@ -86,6 +91,7 @@ public class SearchResultActivity extends AppCompatActivity {
                     String searchStatus = intent.getStringExtra(VocabularyIntentService.EXTRA_STATUS);
                     ClientVocabulary clientVocabulary = intent.getParcelableExtra(VocabularyIntentService.EXTRA_VOCABULARY);
 
+                    progressBar.setVisibility(View.GONE);
                     if (clientVocabulary != null)
                         Timber.d("Received vocabulary from IntentService: " + clientVocabulary.toString());
                     else

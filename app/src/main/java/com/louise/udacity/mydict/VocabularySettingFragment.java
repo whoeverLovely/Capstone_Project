@@ -10,13 +10,12 @@ import android.os.Bundle;
 import android.support.v14.preference.MultiSelectListPreference;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.preference.CheckBoxPreference;
-import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceManager;
 
 import com.louise.udacity.mydict.data.Constants;
+import com.louise.udacity.mydict.service.VocabularyIntentService;
 
 import java.util.Set;
 

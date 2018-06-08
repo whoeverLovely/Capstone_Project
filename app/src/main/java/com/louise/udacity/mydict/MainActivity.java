@@ -13,7 +13,6 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -28,7 +27,9 @@ import com.louise.udacity.mydict.data.ClientVocabulary;
 import com.louise.udacity.mydict.data.Constants;
 import com.louise.udacity.mydict.data.VocabularyContentProvider;
 import com.louise.udacity.mydict.data.VocabularyContract;
+import com.louise.udacity.mydict.service.VocabularyIntentService;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -55,77 +56,28 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private static final int LOADER_LEARN_LIST_ID = 100;
     private static final int LOADER_REVIEW_LIST_ID = 200;
-    private static int currentItemIndex;
-    private static boolean isDialogDisplay;
-    private static AlertDialog.Builder dialogBuilder;
-    private static ClientVocabulary mClientVocabulary;
-    private static String currentList;
+
+    private boolean isDialogDisplay;
+    private AlertDialog.Builder dialogBuilder;
+    private ClientVocabulary mClientVocabulary;
+    private String currentList;
     private static String LIST_LEARN = "learn";
     private static String LIST_REVIEW = "review";
-    private static List<ClientVocabulary> clientVocabularyList;
-    private static boolean flag;
-    private static Menu mMenu;
+    private ArrayList<ClientVocabulary> clientVocabularyList;
+    private int currentItemIndex;
+    private boolean flag;
     public static final String EXTRA_GROUP = "com.louise.udacity.mydict.mainActivity.extra.group";
 
     private static final String STATE_KEY_DISPLAY_DIALOG = "isDialogDisplay";
+    private static final String STATE_KEY_CURRENT_INDEX = "currentIndex";
+    private static final String STATE_CLIENT_VOCABULARY_LIST = "vocabularyList";
+    private static final String STATE_CURRENT_LIST = "currentList";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-
-        if (savedInstanceState != null) {
-            isDialogDisplay = savedInstanceState.getBoolean(STATE_KEY_DISPLAY_DIALOG);
-            if (isDialogDisplay)
-                dialogBuilder.show();
-        }
-
-        String learnListStatus = PreferenceManager.getDefaultSharedPreferences(this)
-                .getString(getString(R.string.pref_learn_list_status), null);
-        final String reviewListStatus = PreferenceManager.getDefaultSharedPreferences(this)
-                .getString(getString(R.string.pref_review_list_status), null);
-
-        // If pref_learn_list_status is null or empty, no vocabulary to learn, ask users to download new lists
-        if (learnListStatus == null || Constants.LIST_STATUS_EMPTY.equals(learnListStatus)) {
-            buttonArchive.setClickable(false);
-            buttonNext.setClickable(false);
-            dialogBuilder = new AlertDialog.Builder(MainActivity.this).setMessage(R.string.list_is_empty)
-                    .setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-
-                            Intent intent = new Intent(MainActivity.this, VocabularySettingActivity.class);
-                            startActivity(intent);
-                        }
-                    });
-            dialogBuilder.show();
-            isDialogDisplay = true;
-        }
-
-        // pref_learn_list_status is ready, load learning list
-        else if (Constants.LIST_STATUS_READY.equals(learnListStatus)) {
-            getSupportLoaderManager().initLoader(LOADER_LEARN_LIST_ID, null, this);
-            buttonArchive.setClickable(true);
-            buttonArchive.setTextColor(getResources().getColor(R.color.colorPrimary));
-            buttonNext.setClickable(true);
-            buttonNext.setTextColor(getResources().getColor(R.color.colorPrimary));
-            currentList = LIST_LEARN;
-        }
-
-        // pref_learn_list_status is done, the user already complete today's learning list
-        else if (Constants.LIST_STATUS_DONE.equals(learnListStatus)) {
-            buttonArchive.setClickable(false);
-            buttonNext.setClickable(false);
-            // If review list is ready, start reviewing
-            if (Constants.LIST_STATUS_READY.equals(reviewListStatus)) {
-                showIfStartReviewDialog();
-            } else {
-                showCompleteDialog();
-            }
-
-        }
 
         buttonArchive.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -134,7 +86,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 updateStatus(VocabularyContract.VocabularyEntry.STATUS_ARCHIVE, mClientVocabulary.getId());
                 Snackbar.make(v, "The word is archived. It'll not appear in review list in the future!", Snackbar.LENGTH_SHORT)
                         .show();
-
                 buttonHandler();
             }
         });
@@ -144,10 +95,67 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             public void onClick(View v) {
                 // Set status to STATUS_LEARNED which will be scheduled in review list days later
                 updateStatus(VocabularyContract.VocabularyEntry.STATUS_LEARNED, mClientVocabulary.getId());
-
                 buttonHandler();
             }
         });
+
+        buttonArchive.setClickable(false);
+        buttonNext.setClickable(false);
+
+        if (savedInstanceState != null) {
+            isDialogDisplay = savedInstanceState.getBoolean(STATE_KEY_DISPLAY_DIALOG);
+            if (isDialogDisplay)
+                dialogBuilder.show();
+
+            currentList = savedInstanceState.getString(STATE_CURRENT_LIST);
+
+            clientVocabularyList = savedInstanceState.getParcelableArrayList(STATE_CLIENT_VOCABULARY_LIST);
+            currentItemIndex = savedInstanceState.getInt(STATE_KEY_CURRENT_INDEX);
+            mClientVocabulary = clientVocabularyList.get(currentItemIndex);
+            if (mClientVocabulary != null)
+                setVocab();
+        }
+
+        if (clientVocabularyList == null || clientVocabularyList.isEmpty()) {
+            String learnListStatus = PreferenceManager.getDefaultSharedPreferences(this)
+                    .getString(getString(R.string.pref_learn_list_status), null);
+            final String reviewListStatus = PreferenceManager.getDefaultSharedPreferences(this)
+                    .getString(getString(R.string.pref_review_list_status), null);
+
+            // If pref_learn_list_status is null or empty, no vocabulary to learn, ask users to download new lists
+            if (learnListStatus == null || Constants.LIST_STATUS_EMPTY.equals(learnListStatus)) {
+
+                dialogBuilder = new AlertDialog.Builder(MainActivity.this).setMessage(R.string.list_is_empty)
+                        .setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+
+                                Intent intent = new Intent(MainActivity.this, VocabularySettingActivity.class);
+                                startActivity(intent);
+                            }
+                        });
+                dialogBuilder.show();
+                isDialogDisplay = true;
+            }
+
+            // pref_learn_list_status is ready, load learning list
+            else if (Constants.LIST_STATUS_READY.equals(learnListStatus)) {
+                getSupportLoaderManager().initLoader(LOADER_LEARN_LIST_ID, null, this);
+                currentList = LIST_LEARN;
+            }
+
+            // pref_learn_list_status is done, the user already complete today's learning list
+            else if (Constants.LIST_STATUS_DONE.equals(learnListStatus)) {
+                // If review list is ready, start reviewing
+                if (Constants.LIST_STATUS_READY.equals(reviewListStatus)) {
+                    showIfStartReviewDialog();
+                } else {
+                    showCompleteDialog();
+                }
+
+            }
+        }
 
     }
 
@@ -155,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu_main, menu);
-        mMenu = menu;
+        Menu mMenu = menu;
         return true;
     }
 
@@ -196,6 +204,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         outState.putBoolean(STATE_KEY_DISPLAY_DIALOG, isDialogDisplay);
+        outState.putInt(STATE_KEY_CURRENT_INDEX, currentItemIndex);
+        outState.putParcelableArrayList(STATE_CLIENT_VOCABULARY_LIST, clientVocabularyList);
+        outState.putString(STATE_CURRENT_LIST, currentList);
         super.onSaveInstanceState(outState);
     }
 
@@ -221,8 +232,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             textViewTranslation.setText(mClientVocabulary.getTranslation());
 
             buttonArchive.setClickable(true);
-            buttonArchive.setTextColor(buttonArchive.getTextColors().getDefaultColor());
-            Timber.d("default button color in main activity: " + buttonArchive.getTextColors().getDefaultColor());
+            buttonNext.setClickable(true);
+            buttonArchive.setTextColor(getResources().getColor(R.color.colorPrimary));
+            buttonNext.setTextColor(getResources().getColor(R.color.colorPrimary));
+
         }
     }
 
@@ -266,7 +279,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if (flag) {
 
             if (clientVocabularyList == null) {
-                clientVocabularyList = new LinkedList<>();
+                clientVocabularyList = new ArrayList<>();
                 ClientVocabulary cv;
                 while (data.moveToNext()) {
                     cv = cursorConvertToClientVocabulary(data);

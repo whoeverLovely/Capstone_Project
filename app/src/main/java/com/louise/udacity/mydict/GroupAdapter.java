@@ -9,6 +9,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import timber.log.Timber;
+
 public class GroupAdapter extends RecyclerView.Adapter<GroupAdapter.GroupViewHolder> {
 
     private Context mContenxt;
@@ -32,8 +34,12 @@ public class GroupAdapter extends RecyclerView.Adapter<GroupAdapter.GroupViewHol
     @Override
     public void onBindViewHolder(@NonNull GroupViewHolder holder, int position) {
         mCursor.moveToPosition(position);
-        holder.textViewWord.setText(mCursor.getString(1));
-        holder.textViewTranslation.setText(mCursor.getString(2));
+        String word = mCursor.getString(0);
+        String translation = mCursor.getString(1);
+        holder.textViewWord.setText(word);
+        holder.textViewTranslation.setText(translation);
+
+        Timber.d("word: " + word + "; translation: " + translation);
     }
 
     @Override

@@ -16,6 +16,7 @@ import com.louise.udacity.mydict.data.VocabularyContract;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import timber.log.Timber;
 
 public class GroupActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
@@ -33,6 +34,7 @@ public class GroupActivity extends AppCompatActivity implements LoaderManager.Lo
         ButterKnife.bind(this);
 
         group = getIntent().getStringExtra(MainActivity.EXTRA_GROUP);
+        Timber.d("group received in groupActivity: " + group);
 
         recyclerViewGroup.setLayoutManager(new LinearLayoutManager(this));
         mGroupAdapter = new GroupAdapter(this);
@@ -58,6 +60,7 @@ public class GroupActivity extends AppCompatActivity implements LoaderManager.Lo
 
     @Override
     public void onLoadFinished(@NonNull android.support.v4.content.Loader<Cursor> loader, Cursor data) {
+        Timber.d("the data size is " + data.getCount());
         mGroupAdapter.swapData(data);
     }
 

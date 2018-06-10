@@ -13,6 +13,7 @@
         android:dialogTitle="@string/set_vocabulary_number"
         android:entries="@array/daily_number_arr"
         android:entryValues="@array/daily_number_arr"
+        android:summary="%s"
          />
 
 </PreferenceScreen>

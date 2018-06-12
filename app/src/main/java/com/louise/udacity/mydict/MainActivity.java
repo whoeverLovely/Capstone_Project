@@ -30,6 +30,7 @@ import com.louise.udacity.mydict.data.VocabularyContract;
 import com.louise.udacity.mydict.service.VocabularyIntentService;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -97,65 +98,51 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             }
         });
 
-        buttonArchive.setClickable(false);
-        buttonNext.setClickable(false);
+        buttonArchive.setEnabled(false);
+        buttonNext.setEnabled(false);
 
-        if (savedInstanceState != null) {
-            isDialogDisplay = savedInstanceState.getBoolean(STATE_KEY_DISPLAY_DIALOG);
-            if (isDialogDisplay)
-                dialogBuilder.show();
+        String learnListStatus = PreferenceManager.getDefaultSharedPreferences(this)
+                .getString(getString(R.string.pref_learn_list_status), null);
+        final String reviewListStatus = PreferenceManager.getDefaultSharedPreferences(this)
+                .getString(getString(R.string.pref_review_list_status), null);
 
-            currentList = savedInstanceState.getString(STATE_CURRENT_LIST);
+        // If pref_learn_list_status is null or empty, no vocabulary to learn, ask users to download new lists
+        if (learnListStatus == null || Constants.LIST_STATUS_EMPTY.equals(learnListStatus)) {
 
-            clientVocabularyList = savedInstanceState.getParcelableArrayList(STATE_CLIENT_VOCABULARY_LIST);
-            currentItemIndex = savedInstanceState.getInt(STATE_KEY_CURRENT_INDEX);
-            mClientVocabulary = clientVocabularyList.get(currentItemIndex);
-            if (mClientVocabulary != null)
-                setVocab();
+            dialogBuilder = new AlertDialog.Builder(MainActivity.this).setMessage(R.string.list_is_empty)
+                    .setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+
+                            currentList = LIST_LEARN;
+                            Intent intent = new Intent(MainActivity.this, VocabularySettingActivity.class);
+                            startActivity(intent);
+                        }
+                    });
+            dialogBuilder.show();
         }
 
-        if (clientVocabularyList == null || clientVocabularyList.isEmpty()) {
-            String learnListStatus = PreferenceManager.getDefaultSharedPreferences(this)
-                    .getString(getString(R.string.pref_learn_list_status), null);
-            final String reviewListStatus = PreferenceManager.getDefaultSharedPreferences(this)
-                    .getString(getString(R.string.pref_review_list_status), null);
-
-            // If pref_learn_list_status is null or empty, no vocabulary to learn, ask users to download new lists
-            if (learnListStatus == null || Constants.LIST_STATUS_EMPTY.equals(learnListStatus)) {
-
-                dialogBuilder = new AlertDialog.Builder(MainActivity.this).setMessage(R.string.list_is_empty)
-                        .setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                dialog.dismiss();
-
-                                Intent intent = new Intent(MainActivity.this, VocabularySettingActivity.class);
-                                startActivity(intent);
-                            }
-                        });
-                dialogBuilder.show();
-                isDialogDisplay = true;
-            }
-
-            // pref_learn_list_status is ready, load learning list
-            else if (Constants.LIST_STATUS_READY.equals(learnListStatus)) {
-                getSupportLoaderManager().initLoader(LOADER_LEARN_LIST_ID, null, this);
-                currentList = LIST_LEARN;
-            }
-
-            // pref_learn_list_status is done, the user already complete today's learning list
-            else if (Constants.LIST_STATUS_DONE.equals(learnListStatus)) {
-                // If review list is ready, start reviewing
-                if (Constants.LIST_STATUS_READY.equals(reviewListStatus)) {
-                    showIfStartReviewDialog();
-                } else {
-                    showCompleteDialog();
-                }
-
-            }
+        // pref_learn_list_status is ready, load learning list
+        else if (Constants.LIST_STATUS_READY.equals(learnListStatus) || Constants.LIST_STATUS_PROCESSING.equals(learnListStatus)) {
+            getSupportLoaderManager().initLoader(LOADER_LEARN_LIST_ID, null, this);
+            currentList = LIST_LEARN;
         }
 
+        // pref_learn_list_status is done, but haven't started review list, display a dialog to ask if start reviewing
+        else if (Constants.LIST_STATUS_DONE.equals(learnListStatus)) {
+            // If review list is ready, start reviewing
+            if (Constants.LIST_STATUS_READY.equals(reviewListStatus)) {
+                showIfStartReviewDialog();
+            } else if (Constants.LIST_STATUS_PROCESSING.equals(reviewListStatus)){
+                getSupportLoaderManager().initLoader(LOADER_REVIEW_LIST_ID, null, this);
+                currentList = LIST_REVIEW;
+            } else {
+                showCompleteDialog();
+            }
+        }
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -200,16 +187,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        outState.putBoolean(STATE_KEY_DISPLAY_DIALOG, isDialogDisplay);
-        outState.putInt(STATE_KEY_CURRENT_INDEX, currentItemIndex);
-        outState.putParcelableArrayList(STATE_CLIENT_VOCABULARY_LIST, clientVocabularyList);
-        outState.putString(STATE_CURRENT_LIST, currentList);
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
     public void startActivity(Intent intent) {
+
+        // Set string extra to the intent sent to SearchResultActivity
         if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
             intent.putExtra(VocabularyIntentService.EXTRA_ORIGINAL_VOCABULARY_ID, mClientVocabulary.getId());
 
@@ -219,7 +199,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             intent.putExtra(VocabularyIntentService.EXTRA_ORIGINAL_VOCABULARY_GROUP, groupName);
         }
-
         super.startActivity(intent);
     }
 
@@ -229,10 +208,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             textViewPhonetic.setText("[" + mClientVocabulary.getPhonetic() + "]");
             textViewTranslation.setText(mClientVocabulary.getTranslation());
 
-            buttonArchive.setClickable(true);
-            buttonNext.setClickable(true);
-            buttonArchive.setTextColor(getResources().getColor(R.color.colorPrimary));
-            buttonNext.setTextColor(getResources().getColor(R.color.colorPrimary));
+            buttonArchive.setEnabled(true);
+            buttonNext.setEnabled(true);
         }
     }
 
@@ -282,13 +259,27 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     cv = cursorConvertToClientVocabulary(data);
                     clientVocabularyList.add(cv);
                 }
+                Collections.shuffle(clientVocabularyList);
+
+                // Update list status to processing
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                if (LIST_LEARN.equals(currentList)) {
+                    editor.putString(getString(R.string.pref_learn_list_status), Constants.LIST_STATUS_PROCESSING);
+                    Timber.d("pref_learn_list_status updated to processing");
+                } else if (LIST_REVIEW.equals(currentList)) {
+                    editor.putString(getString(R.string.pref_review_list_status), Constants.LIST_STATUS_PROCESSING);
+                    Timber.d("pref_review_list_status updated to processing");
+
+                }
+                editor.apply();
             }
 
             Timber.d("The number of entries loaded: %s", data.getCount());
-            Timber.d("current item index: " + currentItemIndex);
+            Timber.d("current item index: %s", currentItemIndex);
 
             if (data.getCount() > 0) {
-                Timber.d("clientVocabularyList size is " + clientVocabularyList.size());
+                Timber.d("clientVocabularyList size is %s", clientVocabularyList.size());
                 mClientVocabulary = clientVocabularyList.get(currentItemIndex);
                 setVocab();
                 currentItemIndex++;
@@ -352,7 +343,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     }
                 });
         dialogBuilder.show();
-        isDialogDisplay = true;
     }
 
     private void showCompleteDialog() {
@@ -367,7 +357,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     }
                 });
         dialogBuilder.show();
-        isDialogDisplay = true;
     }
 
     private void buttonHandler() {

@@ -92,10 +92,6 @@ public class SearchResultActivity extends AppCompatActivity {
                     ClientVocabulary clientVocabulary = intent.getParcelableExtra(VocabularyIntentService.EXTRA_VOCABULARY);
 
                     progressBar.setVisibility(View.GONE);
-                    if (clientVocabulary != null)
-                        Timber.d("Received vocabulary from IntentService: " + clientVocabulary.toString());
-                    else
-                        Timber.d("Can't find the vocabulary");
 
                     if (Constants.STATUS_SUCCEEDED.equals(searchStatus) && clientVocabulary != null) {
                         mClientVocabulary = clientVocabulary;

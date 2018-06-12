@@ -11,13 +11,13 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -37,7 +37,7 @@ import java.util.List;
 
 import timber.log.Timber;
 
-public class VocabularyIntentService extends IntentService{
+public class VocabularyIntentService extends IntentService {
 
     public static final String ACTION_DOWNLOAD = "com.louise.udacity.mydict.action.download";
     public static final String ACTION_STATUS = "com.louise.udacity.mydict.action.status";
@@ -216,42 +216,38 @@ public class VocabularyIntentService extends IntentService{
     }
 
     private void handleActionSearch(final String query) {
-        Timber.d("Stating search");
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        DocumentReference docRef = db.collection("vocabulary").document(query);
-
+        
         final Intent intent = new Intent(ACTION_SEARCH);
 
-        docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+        DatabaseReference vocabularyRef = FirebaseDatabase.getInstance().getReference("vocabulary").child(query);
+        ValueEventListener vocabularyListener = new ValueEventListener() {
             @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    intent.putExtra(EXTRA_STATUS, Constants.STATUS_SUCCEEDED);
-                    if (document.exists()) {
-                        String phonetic = (String) document.get("phonetic");
-                        String translation = (String) document.get("translation");
-                        String definition = (String) document.get("definition");
-                        ClientVocabulary clientVocabulary = new ClientVocabulary();
-                        clientVocabulary.setWord(query);
-                        clientVocabulary.setPhonetic(phonetic);
-                        clientVocabulary.setTranslation(translation);
-                        clientVocabulary.setDefinition(definition);
-                        intent.putExtra(EXTRA_VOCABULARY, clientVocabulary);
-                        Timber.d("DocumentSnapshot data: " + document.getData());
-                    } else {
-                        intent.putExtra(EXTRA_VOCABULARY, Constants.STATUS_FAILED);
-                        Timber.d("No such document");
-                    }
-                } else {
-                    intent.putExtra(EXTRA_STATUS, Constants.STATUS_FAILED);
-                    Timber.d("get failed with " + task.getException());
-                }
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // Get Post object and use the values to update the UI
+                ClientVocabulary vocabulary = dataSnapshot.getValue(ClientVocabulary.class);
+                intent.putExtra(EXTRA_VOCABULARY, vocabulary);
+                intent.putExtra(EXTRA_STATUS, Constants.STATUS_SUCCEEDED);
+
+                if (vocabulary != null)
+                    Timber.d("the search result word: " + vocabulary.getWord());
+                else
+                    Timber.d("the query result is empty.");
+
                 LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(intent);
             }
-        });
-    }
 
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                // Getting Post failed, log a message
+                Timber.d("loadPost:onCancelled" + databaseError.toException());
+                // ...
+
+                intent.putExtra(EXTRA_STATUS, Constants.STATUS_FAILED);
+                LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(intent);
+            }
+        };
+        vocabularyRef.addListenerForSingleValueEvent(vocabularyListener);
+    }
 
 
     private void handleActionUpdateStatus(int status, long vocabId) {
@@ -340,7 +336,6 @@ public class VocabularyIntentService extends IntentService{
         // Broadcasts the Intent to receivers in this app.
         LocalBroadcastManager.getInstance(VocabularyIntentService.this).sendBroadcast(notifyIntent);
     }
-
 
 
     private void importToDB(InputStream inputStream, String tag) {

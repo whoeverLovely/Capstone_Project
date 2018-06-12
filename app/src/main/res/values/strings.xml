@@ -31,5 +31,7 @@
     <string name="search">Search</string>
     <string name="no_group">No other vocabulary linked to this one!</string>
     <string name="vocabularies_of_the_day">Vocabularies of the day</string>
+    <string name="list_update_succeed">List updating succeeded!</string>
+    <string name="list_update_failed">List updating failed! Please try again later.</string>
 
 </resources>

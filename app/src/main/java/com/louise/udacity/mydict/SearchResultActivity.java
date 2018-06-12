@@ -55,31 +55,42 @@ public class SearchResultActivity extends AppCompatActivity {
         // Get the intent, verify the action and get the query
 
         Intent intent = getIntent();
-        String query = intent.getStringExtra(SearchManager.QUERY);
-        final long originalVocabularyId = intent.getLongExtra(VocabularyIntentService.EXTRA_ORIGINAL_VOCABULARY_ID, -1);
-        final String originalGroup = intent.getStringExtra(VocabularyIntentService.EXTRA_ORIGINAL_VOCABULARY_GROUP);
+        if (intent != null) {
+            String query = intent.getStringExtra(SearchManager.QUERY);
+            final long originalVocabularyId = intent.getLongExtra(VocabularyIntentService.EXTRA_ORIGINAL_VOCABULARY_ID, -1);
+            final String originalGroup = intent.getStringExtra(VocabularyIntentService.EXTRA_ORIGINAL_VOCABULARY_GROUP);
 
-        Timber.d("get original group in searchResultActivity: " + originalGroup);
-        // do query
-        VocabularyIntentService.startActionSearch(this, query);
+            Timber.d("get original group in searchResultActivity: " + originalGroup);
 
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(VocabularyIntentService.ACTION_SEARCH); // Action1 to filter
-        intentFilter.addAction(VocabularyIntentService.ACTION_LINK); // Action2 to filter
-        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
-                intentFilter);
+            if (query != null) {
+                // do query
+                VocabularyIntentService.startActionSearch(this, query);
 
-        buttonLink.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Link current vocabulary to previous one
-                VocabularyIntentService.startActionLink(SearchResultActivity.this, mClientVocabulary, originalVocabularyId, originalGroup);
+                IntentFilter intentFilter = new IntentFilter();
+                intentFilter.addAction(VocabularyIntentService.ACTION_SEARCH); // Action1 to filter
+                intentFilter.addAction(VocabularyIntentService.ACTION_LINK); // Action2 to filter
+                LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
+                        intentFilter);
             }
-        });
-        buttonLink.setClickable(false);
+
+            buttonLink.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // Link current vocabulary to previous one
+                    VocabularyIntentService.startActionLink(SearchResultActivity.this, mClientVocabulary, originalVocabularyId, originalGroup);
+                }
+            });
+            buttonLink.setEnabled(false);
+        }
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
     }
 
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
@@ -137,8 +148,7 @@ public class SearchResultActivity extends AppCompatActivity {
         textViewPhonetic.setText("[" + mClientVocabulary.getPhonetic() + "]");
         textViewTranslation.setText(mClientVocabulary.getTranslation());
 
-        buttonLink.setClickable(true);
-        buttonLink.setTextColor(getResources().getColor(R.color.colorPrimary));
+        buttonLink.setEnabled(true);
     }
 
     @Override

@@ -5,7 +5,7 @@ android {
         config {
             keyAlias 'key0'
             keyPassword 'keyPw0'
-            storeFile file('/home/yan/StudioProjects/new/0612/Capstone_Project/key.jks')
+            storeFile file('key.jks')
             storePassword '123456'
         }
     }

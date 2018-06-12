@@ -82,14 +82,6 @@ public class VocabularyIntentService extends IntentService {
         context.startService(intent);
     }
 
-    public static void startActionUpdateStatus(Context context, int status, long id) {
-        Intent intent = new Intent(context, VocabularyIntentService.class);
-        intent.setAction(ACTION_UPDATE_STATUS);
-        intent.putExtra(EXTRA_TAG, status);
-        intent.putExtra(EXTRA_VOCABULARY_ID, id);
-        context.startService(intent);
-    }
-
     public static void startActionSearch(Context context, String query) {
         Intent intent = new Intent(context, VocabularyIntentService.class);
         intent.setAction(ACTION_SEARCH);
@@ -120,12 +112,6 @@ public class VocabularyIntentService extends IntentService {
                     case ACTION_DELETE:
                         final String deleteTag = intent.getStringExtra(EXTRA_TAG);
                         handleActionDelete(deleteTag);
-                        break;
-
-                    case ACTION_UPDATE_STATUS:
-                        int status = intent.getIntExtra(EXTRA_STATUS, -1);
-                        long vocabId = intent.getLongExtra(EXTRA_VOCABULARY_ID, -1);
-                        handleActionUpdateStatus(status, vocabId);
                         break;
 
                     case ACTION_SEARCH:
@@ -216,7 +202,7 @@ public class VocabularyIntentService extends IntentService {
     }
 
     private void handleActionSearch(final String query) {
-        
+
         final Intent intent = new Intent(ACTION_SEARCH);
 
         DatabaseReference vocabularyRef = FirebaseDatabase.getInstance().getReference("vocabulary").child(query);
@@ -247,16 +233,6 @@ public class VocabularyIntentService extends IntentService {
             }
         };
         vocabularyRef.addListenerForSingleValueEvent(vocabularyListener);
-    }
-
-
-    private void handleActionUpdateStatus(int status, long vocabId) {
-        ContentValues cv = new ContentValues();
-        cv.put(VocabularyContract.VocabularyEntry.COLUMN_STATUS, status);
-        getContentResolver().update(ContentUris.withAppendedId(VocabularyContract.VocabularyEntry.CONTENT_URI, vocabId),
-                cv,
-                null,
-                null);
     }
 
     private void handleActionDownload(final String tag) {

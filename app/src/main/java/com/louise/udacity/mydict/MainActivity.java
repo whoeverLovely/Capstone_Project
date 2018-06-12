@@ -30,8 +30,6 @@ import com.louise.udacity.mydict.data.VocabularyContract;
 import com.louise.udacity.mydict.service.VocabularyIntentService;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -235,7 +233,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             buttonNext.setClickable(true);
             buttonArchive.setTextColor(getResources().getColor(R.color.colorPrimary));
             buttonNext.setTextColor(getResources().getColor(R.color.colorPrimary));
-
         }
     }
 

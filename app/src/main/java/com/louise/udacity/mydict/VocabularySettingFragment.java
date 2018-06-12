@@ -7,14 +7,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.design.widget.Snackbar;
 import android.support.v14.preference.MultiSelectListPreference;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceManager;
+import android.widget.Button;
+import android.widget.TextView;
 
 import com.louise.udacity.mydict.data.Constants;
 import com.louise.udacity.mydict.service.VocabularyIntentService;
@@ -27,6 +27,7 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
         implements Preference.OnPreferenceChangeListener, SharedPreferences.OnSharedPreferenceChangeListener {
 
     Set<String> existingTags;
+    AlertDialog alertDialog;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -55,34 +56,29 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
         intentFilter.addAction(VocabularyIntentService.ACTION_DELETE);
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mMessageReceiver, intentFilter);
 
-        Preference preference = findPreference(getString(R.string.pref_list_tag_key));
-        preference.setOnPreferenceChangeListener(this);
+        Preference preferenceListTag = findPreference(getString(R.string.pref_list_tag_key));
+        preferenceListTag.setOnPreferenceChangeListener(this);
 
     }
 
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
             String status = intent.getStringExtra(VocabularyIntentService.EXTRA_STATUS);
-            switch (action) {
-                case VocabularyIntentService.ACTION_DOWNLOAD:
-                    if (Constants.STATUS_SUCCEEDED.equals(status)) {
-                        Snackbar.make(getActivity().findViewById(android.R.id.content),
-                                R.string.dialog_download_complete,
-                                Snackbar.LENGTH_LONG).show();
-                    }
-                    break;
-                case VocabularyIntentService.ACTION_DELETE:
-                    if (Constants.STATUS_SUCCEEDED.equals(status)) {
-                        Snackbar.make(getActivity().findViewById(android.R.id.content),
-                                R.string.dialog_deletion_completed,
-                                Snackbar.LENGTH_LONG).show();
-                    }
-                    break;
 
-                default:
-                    throw new IllegalArgumentException("The intent action is invalid!");
+            if (alertDialog.isShowing()) {
+                alertDialog.setCancelable(true);
+
+                TextView messageView = alertDialog .findViewById(android.R.id.message);
+                if (Constants.STATUS_SUCCEEDED.equals(status))
+                    messageView.setText("List updating succeeded!");
+                else
+                    messageView.setText("List updating failed! Please try again later.");
+
+                Button positiveButton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                positiveButton.setEnabled(true);
+
+                alertDialog.show();
             }
         }
     };
@@ -90,12 +86,33 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
     @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
 
+        alertDialog = new AlertDialog.Builder(getActivity())
+                .setMessage("Updating vocabulary lists!")
+                .setCancelable(false)
+                .setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .create();
+
+        alertDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialog) {
+                    ((AlertDialog)dialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            }
+        });
+        alertDialog.show();
+
+        Timber.d("list tags changed");
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
         existingTags = sharedPreferences.getStringSet(getString(R.string.pref_list_tag_key), null);
 
-        preference = (MultiSelectListPreference) preference;
-        Set<String> newTags = ((MultiSelectListPreference) preference).getValues();
+        Set<String> newTags = (Set<String>) newValue;
 
+        Timber.d("Existing tags: " + existingTags.toString());
+        Timber.d("New tags: " + newTags.toString());
         // Download lists which is not in the existingTags
         for (String tag : newTags) {
             if (existingTags == null || existingTags.size() == 0 || !existingTags.contains(tag)) {
@@ -139,7 +156,7 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
                 Preference preferenceListTags = findPreference(getString(R.string.pref_list_tag_key));
                 StringBuilder tagsString = new StringBuilder();
                 for (String s : listTags) {
-                    MultiSelectListPreference preference = (MultiSelectListPreference)findPreference(key);
+                    MultiSelectListPreference preference = (MultiSelectListPreference) findPreference(key);
                     int index = preference.findIndexOfValue(s);
                     tagsString = tagsString.append(preference.getEntries()[index]).append("; ");
                 }

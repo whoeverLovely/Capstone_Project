@@ -1,6 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        config {
+            keyAlias 'key0'
+            keyPassword 'keyPw0'
+            storeFile file("$rootDir/key.jks")
+            storePassword '123456'
+        }
+    }
     compileSdkVersion 27
     defaultConfig {
         applicationId "com.louise.udacity.mydict"
@@ -15,8 +23,8 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.config
         }
-
         shrunk {
             minifyEnabled true
             shrinkResources true
@@ -25,7 +33,7 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support:appcompat-v7:27.1.1'
     implementation 'com.android.support:support-v4:27.1.1'
     implementation 'com.android.support:support-media-compat:27.1.1'
@@ -36,19 +44,16 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-
     implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
-
-    implementation project(":dataPrep")
+    implementation project(':dataPrep')
     implementation 'com.jakewharton.timber:timber:4.7.0'
     implementation 'com.jakewharton:butterknife:8.8.1'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
     implementation 'com.google.protobuf:protobuf-lite:3.0.0'
     implementation 'com.android.support:preference-v7:27.1.1'
     implementation 'joda-time:joda-time:2.10'
-    implementation "com.android.support:design:27.1.1"
+    implementation 'com.android.support:design:27.1.1'
     implementation 'com.google.firebase:firebase-database:16.0.1'
-
     implementation 'com.android.support:multidex:1.0.3'
 }
 

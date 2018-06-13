@@ -71,9 +71,9 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
 
                 TextView messageView = alertDialog .findViewById(android.R.id.message);
                 if (Constants.STATUS_SUCCEEDED.equals(status))
-                    messageView.setText("List updating succeeded!");
+                    messageView.setText(R.string.list_update_succeed);
                 else
-                    messageView.setText("List updating failed! Please try again later.");
+                    messageView.setText(R.string.list_update_failed);
 
                 Button positiveButton = alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 positiveButton.setEnabled(true);
@@ -111,8 +111,11 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
 
         Set<String> newTags = (Set<String>) newValue;
 
-        Timber.d("Existing tags: " + existingTags.toString());
-        Timber.d("New tags: " + newTags.toString());
+        if (existingTags != null && newTags != null) {
+            Timber.d("Existing tags: " + existingTags.toString());
+            Timber.d("New tags: " + newTags.toString());
+        }
+
         // Download lists which is not in the existingTags
         for (String tag : newTags) {
             if (existingTags == null || existingTags.size() == 0 || !existingTags.contains(tag)) {

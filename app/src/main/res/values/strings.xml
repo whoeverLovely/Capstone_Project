@@ -33,5 +33,7 @@
     <string name="vocabularies_of_the_day">Vocabularies of the day</string>
     <string name="list_update_succeed">List updating succeeded!</string>
     <string name="list_update_failed">List updating failed! Please try again later.</string>
+    <string name="word_archived">The word is archived. It\'ll not appear in review list in the future!</string>
+    <string name="current_vocabulary_is_empty">Please select a vocabulary before view group!</string>
 
 </resources>

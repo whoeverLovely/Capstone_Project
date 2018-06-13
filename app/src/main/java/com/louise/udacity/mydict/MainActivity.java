@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             public void onClick(View v) {
                 // Set status to STATUS_ARCHIVE which will never appear in review or learn list
                 updateStatus(VocabularyContract.VocabularyEntry.STATUS_ARCHIVE, mClientVocabulary.getId());
-                Snackbar.make(v, "The word is archived. It'll not appear in review list in the future!", Snackbar.LENGTH_SHORT)
+                Snackbar.make(v, R.string.word_archived, Snackbar.LENGTH_SHORT)
                         .show();
                 buttonHandler();
             }
@@ -180,6 +180,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 return true;
 
             case R.id.view_group:
+                if (mClientVocabulary == null) {
+                    Snackbar.make(textViewWord, R.string.current_vocabulary_is_empty, Snackbar.LENGTH_LONG).show();
+                    return true;
+                }
                 // If the group is empty, display a snackbar
                 Cursor cursor = getContentResolver().query(VocabularyContentProvider.buildVocabularyUriWithWord(mClientVocabulary.getWord()),
                         new String[]{VocabularyContract.VocabularyEntry.COLUMN_GROUP_NAME},
@@ -195,6 +199,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     groupIntent.putExtra(EXTRA_GROUP, mClientVocabulary.getGroupName());
                     startActivity(groupIntent);
                 }
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }

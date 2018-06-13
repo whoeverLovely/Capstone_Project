@@ -56,7 +56,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private static final int LOADER_LEARN_LIST_ID = 100;
     private static final int LOADER_REVIEW_LIST_ID = 200;
 
-    private boolean isDialogDisplay;
     private AlertDialog.Builder dialogBuilder;
     private ClientVocabulary mClientVocabulary;
     private String currentList;
@@ -66,11 +65,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private int currentItemIndex;
     private boolean flag;
     public static final String EXTRA_GROUP = "com.louise.udacity.mydict.mainActivity.extra.group";
-
-    private static final String STATE_KEY_DISPLAY_DIALOG = "isDialogDisplay";
-    private static final String STATE_KEY_CURRENT_INDEX = "currentIndex";
-    private static final String STATE_CLIENT_VOCABULARY_LIST = "vocabularyList";
-    private static final String STATE_CURRENT_LIST = "currentList";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,12 +137,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu_main, menu);
-        Menu mMenu = menu;
         return true;
     }
 
@@ -167,6 +159,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 return true;
 
             case R.id.view_group:
+                if (mClientVocabulary == null) {
+                    Snackbar.make(textViewWord, R.string.currentVocabulaty_is_empty, Snackbar.LENGTH_LONG).show();
+                }
+
                 // If the group is empty, display a snackbar
                 Cursor cursor = getContentResolver().query(VocabularyContentProvider.buildVocabularyUriWithWord(mClientVocabulary.getWord()),
                         new String[]{VocabularyContract.VocabularyEntry.COLUMN_GROUP_NAME},
@@ -182,6 +178,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     groupIntent.putExtra(EXTRA_GROUP, mClientVocabulary.getGroupName());
                     startActivity(groupIntent);
                 }
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -363,22 +360,17 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if (currentItemIndex == clientVocabularyList.size() - 1) {
             String reviewListStatus = PreferenceManager.getDefaultSharedPreferences(this)
                     .getString(getString(R.string.pref_review_list_status), null);
+            SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(MainActivity.this).edit();
+            editor.putString(getString(R.string.pref_learn_list_status), Constants.LIST_STATUS_DONE);
             if (currentList.equals(LIST_LEARN) && Constants.LIST_STATUS_READY.equals(reviewListStatus)) {
-                SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(MainActivity.this).edit();
-                editor.putString(getString(R.string.pref_learn_list_status), Constants.LIST_STATUS_DONE);
-                editor.apply();
-
                 showIfStartReviewDialog();
             } else {
-                SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(MainActivity.this).edit();
                 editor.putString(getString(R.string.pref_review_list_status), Constants.LIST_STATUS_DONE);
-                editor.apply();
-
                 showCompleteDialog();
             }
+            editor.apply();
         } else {
             displayNextVocabulary();
-            isDialogDisplay = false;
         }
     }
 }

@@ -31,5 +31,6 @@
     <string name="search">Search</string>
     <string name="no_group">No other vocabulary linked to this one!</string>
     <string name="vocabularies_of_the_day">Vocabularies of the day</string>
+    <string name="currentVocabulaty_is_empty">Please select a vocabulary before view group.</string>
 
 </resources>

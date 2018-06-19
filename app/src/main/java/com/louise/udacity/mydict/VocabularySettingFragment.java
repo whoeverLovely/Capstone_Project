@@ -6,19 +6,28 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.support.design.widget.Snackbar;
 import android.support.v14.preference.MultiSelectListPreference;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceManager;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.louise.udacity.mydict.data.Constants;
 import com.louise.udacity.mydict.service.VocabularyIntentService;
 
+import org.joda.time.LocalDate;
+
+import java.net.URI;
 import java.util.Set;
 
 import timber.log.Timber;
@@ -29,11 +38,23 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
     Set<String> existingTags;
     AlertDialog alertDialog;
 
+    OnDataPass dataPasser;
+
+    public interface OnDataPass {
+        public void onDataPass(boolean isDownloaded);
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getPreferenceScreen().getSharedPreferences()
                 .registerOnSharedPreferenceChangeListener(this);
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        dataPasser = (OnDataPass) context;
     }
 
     @Override
@@ -49,7 +70,7 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
         setSummary(sharedPreferences, getString(R.string.pref_list_tag_key));
-        setSummary(sharedPreferences, getString(R.string.pref_daily_count_key));
+        /*setSummary(sharedPreferences, getString(R.string.pref_daily_count_key));*/
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(VocabularyIntentService.ACTION_DOWNLOAD);
@@ -69,7 +90,10 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
             if (alertDialog.isShowing()) {
                 alertDialog.setCancelable(true);
 
-                TextView messageView = alertDialog .findViewById(android.R.id.message);
+                ProgressBar progressBar = alertDialog.findViewById(R.id.progressBar_download_list_dialog);
+                progressBar.setVisibility(View.GONE);
+
+                TextView messageView = alertDialog.findViewById(R.id.textView_download_list_dialog_message);
                 if (Constants.STATUS_SUCCEEDED.equals(status))
                     messageView.setText(R.string.list_update_succeed);
                 else
@@ -80,6 +104,14 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
 
                 alertDialog.show();
             }
+
+            /*// Update last_download_time in sharedPreference
+            SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(getActivity()).edit();
+            LocalDate localDate = LocalDate.now();
+            String curentDate = localDate.toString();
+            editor.putString(getString(R.string.pref_last_download_date), curentDate);
+            editor.apply();*/
+                dataPasser.onDataPass(true);
         }
     };
 
@@ -87,7 +119,7 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
     public boolean onPreferenceChange(Preference preference, Object newValue) {
 
         alertDialog = new AlertDialog.Builder(getActivity())
-                .setMessage("Updating vocabulary lists!")
+                .setView(R.layout.dialog_list_download)
                 .setCancelable(false)
                 .setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
                     @Override
@@ -104,6 +136,7 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
             }
         });
         alertDialog.show();
+
 
         Timber.d("list tags changed");
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
@@ -142,14 +175,14 @@ public class VocabularySettingFragment extends PreferenceFragmentCompat
 
     private void setSummary(SharedPreferences sharedPreferences, String key) {
 
-        // Set summary for daily count
+        /*// Set summary for daily count
         if (key.equals(getString(R.string.pref_daily_count_key))) {
             String dailyCount = sharedPreferences.getString(key, null);
             if (dailyCount != null) {
                 Preference preferenceDailyCount = findPreference(getString(R.string.pref_daily_count_key));
                 preferenceDailyCount.setSummary(dailyCount);
             }
-        }
+        }*/
 
         // Set summary for list tags
         if (key.equals(getString(R.string.pref_list_tag_key))) {

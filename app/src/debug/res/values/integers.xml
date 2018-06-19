@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <integer name="job_interval_min">5</integer>
+    <integer name="job_interval_min">10</integer>
     <integer name="review_interval_days">0</integer>
+
+    <integer name="default_daily_count">10</integer>
 </resources>

@@ -80,6 +80,7 @@ public class MyJobService extends JobService {
             editor.putString(context.getString(R.string.pref_learn_list_status), Constants.LIST_STATUS_READY);
         } else {
             int learnNumTotal = VocabularyContentProvider.getVocabularyNumForToday(context, VocabularyContract.VocabularyEntry.STATUS_LEARNING);
+            editor.putInt(context.getString(R.string.pref_today_total_learn), learnNumTotal);
             if (learnNumTotal > 0)
                 editor.putString(context.getString(R.string.pref_learn_list_status), Constants.LIST_STATUS_READY);
             else

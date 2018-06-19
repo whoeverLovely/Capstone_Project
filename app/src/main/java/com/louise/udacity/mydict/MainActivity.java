@@ -175,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     Snackbar.make(textViewWord, R.string.no_group, Snackbar.LENGTH_LONG).show();
                 else {
                     Intent groupIntent = new Intent(this, GroupActivity.class);
-                    groupIntent.putExtra(EXTRA_GROUP, mClientVocabulary.getGroupName());
+                    groupIntent.putExtra(EXTRA_GROUP, group);
                     startActivity(groupIntent);
                 }
                 return true;
